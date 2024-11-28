@@ -4,10 +4,10 @@
 #include "header.h"
 #include "PWM.h"
 
-#define ENA 1 // ENA 핀
+#define ENA 0 // ENA 핀 23
 #define IN1 0  // IN1 핀
 #define IN2 2  // IN2 핀
-#define ENB 26  // ENB 핀
+#define ENB 1  // ENB 핀 26
 #define IN3 4 // IN3 핀
 #define IN4 5  // IN4 핀
 

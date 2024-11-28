@@ -29,7 +29,7 @@ static int PWMExport(int pwmnum) {
 	write(fd, buffer, byte);
 	close(fd);
 	
-	sleep(2);
+	sleep(1);
 	return (0);
 }
 
@@ -38,7 +38,7 @@ static int PWMEnable(int pwmnum) {
 	char path[DIRECTION_MAX];
 	int fd;
 	
-	snprintf(path, DIRECTION_MAX, "/sys/class/pwm/pwmchip0/pwm0/enable", pwmnum);
+	snprintf(path, DIRECTION_MAX, "/sys/class/pwm/pwmchip0/pwm%d/enable", pwmnum);
 	fd = open(path, O_WRONLY);
 	if (-1 == fd) {
 		fprintf(stderr, "Failed to open in enable!\n");
@@ -55,7 +55,7 @@ static int PWMWritePeriod(int pwmnum, int value) {
 	char path[VALUE_MAX];
 	int fd, byte;
 	
-	snprintf(path, VALUE_MAX, "/sys/class/pwm/pwmchip0/pwm0/period", pwmnum);
+	snprintf(path, VALUE_MAX, "/sys/class/pwm/pwmchip0/pwm%d/period", pwmnum);
 	fd = open(path, O_WRONLY);
 	if (-1 == fd) {
 		fprintf(stderr, "Failed to open in period!\n");
@@ -77,7 +77,7 @@ static int PWMWriteDutyCycle(int pwmnum, int value) {
 	char path[VALUE_MAX];
 	int fd, byte;
 	
-	snprintf(path, VALUE_MAX, "/sys/class/pwm/pwmchip0/pwm0/duty_cycle", pwmnum);
+	snprintf(path, VALUE_MAX, "/sys/class/pwm/pwmchip0/pwm%d/duty_cycle", pwmnum);
 	fd = open(path, O_WRONLY);
 	if (-1 == fd) {
 		fprintf(stderr, "Failed to open in duty cycle!\n");
