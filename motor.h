@@ -48,6 +48,11 @@ void goForward(int spd) {
     PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
+void goSmoothLeft(int spd){
+	digitalWrite(IN1, LOW);
+
+}
+
 void goBackward(int spd) {
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
