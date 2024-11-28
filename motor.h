@@ -44,8 +44,8 @@ void goForward(int spd) {
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
 
-    PWMWriteDutyCycle(ENA, spd * 1000);
-    PWMWriteDutyCycle(ENB, spd * 1000);
+    PWMWriteDutyCycle(ENA, spd * 10000);
+    PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
 void goBackward(int spd) {
@@ -54,8 +54,8 @@ void goBackward(int spd) {
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
 
-    PWMWriteDutyCycle(ENA, spd * 1000);
-    PWMWriteDutyCycle(ENB, spd * 1000);
+    PWMWriteDutyCycle(ENA, spd * 10000);
+    PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
 void turnLeft(int spd) {
@@ -64,8 +64,8 @@ void turnLeft(int spd) {
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
 
-    PWMWriteDutyCycle(ENA, spd * 1000);
-    PWMWriteDutyCycle(ENB, spd * 1000);
+    PWMWriteDutyCycle(ENA, spd * 10000);
+    PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
     void turnRight(int spd) {
@@ -74,8 +74,8 @@ void turnLeft(int spd) {
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
 
-    PWMWriteDutyCycle(ENA, spd * 1000);
-    PWMWriteDutyCycle(ENB, spd * 1000);
+    PWMWriteDutyCycle(ENA, spd * 10000);
+    PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
 #endif
