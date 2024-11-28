@@ -16,7 +16,7 @@ void* controller_to_car_output(void* arg) {
 
     int base_cnt = 0;
 
-    float alpha = 0.2;
+    float alpha = 0.35;
 
     struct timespec delay;
     delay.tv_sec = 0;
@@ -31,15 +31,14 @@ void* controller_to_car_output(void* arg) {
 
             
             base_cnt++;
-            if (base_cnt <= 10) {  //베이스 값 정하기, 조이스틱 안움직일 때의 값을 설정
-                
-
+            if (base_cnt <= 10) {  //베이스 값 정하기
                 base_joy_data[0] += temp[0];
                 base_joy_data[1] += temp[1];
 
                 if (base_cnt == 10) {
                     base_joy_data[0] = base_joy_data[0] / base_cnt;
                     base_joy_data[1] = base_joy_data[1] / base_cnt;
+                    
 
                     prev_joy_data[0] = base_joy_data[0];
                     prev_joy_data[1] = base_joy_data[1];
@@ -53,11 +52,22 @@ void* controller_to_car_output(void* arg) {
 
                 joy_data[0] = (int)(alpha * joy_data[0] + (1 - alpha) * prev_joy_data[0]);
                 joy_data[1] = (int)(alpha * joy_data[1] + (1 - alpha) * prev_joy_data[1]);
-
                 prev_joy_data[0] = joy_data[0];
                 prev_joy_data[1] = joy_data[1];
+                
+                
+                if (joy_data[0] > base_joy_data[0]) {
+                    if (joy_data[0] == 0)
+                        joy_data[0] -= abs(base_joy_data[0] - 512);
+                }
+              
+                if (joy_data[1] > base_joy_data[1]) {
+                    if (joy_data[1] == 0)
+                        joy_data[1] -= abs(base_joy_data[1] - 512);
+                }
+               
 
-
+                //0, 0을 조이스틱의 중앙으로 설정
                 joy_data[0] = joy_data[0] - base_joy_data[0];
                 joy_data[1] = base_joy_data[1] - joy_data[1];
 
@@ -78,7 +88,8 @@ void* controller_to_car_output(void* arg) {
                     joy_data[1] -= 100;
                 else
                     joy_data[1] += 100;
-
+                    
+                //버튼이 안눌리면 1, 눌리면 0으로 전송(데이터 크기 줄이기)
                 if (joy_data[2])
                     joy_data[2] = 1;
 
