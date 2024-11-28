@@ -12,11 +12,10 @@
 #define DIRECTION_MAX 256
 
 static int PWMExport(int pwmnum) {
-#define BUFFER_MAX 3
+  #define BUFFER_MAX 3
   char buffer[BUFFER_MAX];
   int fd, byte;
 
-  // TODO: Enter the export path.
   fd = open("/sys/class/pwm/pwmchip0/export", O_WRONLY);
   if (-1 == fd) {
     fprintf(stderr, "Failed to open export for export!\n");
@@ -27,8 +26,7 @@ static int PWMExport(int pwmnum) {
   write(fd, buffer, byte);
   close(fd);
 
-  sleep(1);
-
+  sleep(2);
   return (0);
 }
 
@@ -38,7 +36,6 @@ static int PWMEnable(int pwmnum) {
   char path[DIRECTION_MAX];
   int fd;
 
-  // TODO: Enter the enable path.
   snprintf(path, DIRECTION_MAX, "/sys/class/pwm/pwmchip0/pwm0/enable", pwmnum);
   fd = open(path, O_WRONLY);
   if (-1 == fd) {
@@ -48,7 +45,6 @@ static int PWMEnable(int pwmnum) {
 
   write(fd, s_enable_str, strlen(s_enable_str));
   close(fd);
-
   return (0);
 }
 
@@ -57,7 +53,6 @@ static int PWMWritePeriod(int pwmnum, int value) {
   char path[VALUE_MAX];
   int fd, byte;
 
-  // TODO: Enter the period path.
   snprintf(path, VALUE_MAX, "/sys/class/pwm/pwmchip0/pwm0/period", pwmnum);
   fd = open(path, O_WRONLY);
   if (-1 == fd) {
@@ -72,7 +67,6 @@ static int PWMWritePeriod(int pwmnum, int value) {
     return -1;
   }
   close(fd);
-
   return (0);
 }
 
@@ -81,7 +75,6 @@ static int PWMWriteDutyCycle(int pwmnum, int value) {
   char path[VALUE_MAX];
   int fd, byte;
 
-  // TODO: Enter the duty_cycle path.
   snprintf(path, VALUE_MAX, "/sys/class/pwm/pwmchip0/pwm0/duty_cycle", pwmnum);
   fd = open(path, O_WRONLY);
   if (-1 == fd) {
@@ -96,7 +89,6 @@ static int PWMWriteDutyCycle(int pwmnum, int value) {
     return -1;
   }
   close(fd);
-
   return (0);
 }
 
