@@ -28,28 +28,12 @@ void* controller_to_car_input_joy(void* arg) {
                 joy_data[i] = ntohl(joy_data[i]);
             }
 
-			// X, Y 값이 -100 ~ +100 범위에 있는 경우 0으로 설정
-			if (joy_data[0] >= -100 && joy_data[0] <= 100) {
-				joy_data[0] = 0;
-			}
-			else if(joy_data[0] > 100)
-				joy_data[0] -= 100;
-			else
-				joy_data[0] += 100;
 
 
-			if (joy_data[1] >= -100 && joy_data[1] <= 100) {
-				joy_data[1] = 0;
-			}
-			else if (joy_data[1] > 100)
-				joy_data[1] -= 100;
-			else
-				joy_data[1] += 100;
+	if (joy_data[2] == 0)
+		bt_flag = 1;
 
-			if (joy_data[2] == 0)
-				bt_flag = 1;
-
-            printf("X: %d  Y: %d  B: %d   %d\n", joy_data[0], joy_data[1], joy_data[2], bt_flag);
+        printf("X: %d  Y: %d  B: %d   %d\n", joy_data[0], joy_data[1], joy_data[2], bt_flag);
         }
      
     }
