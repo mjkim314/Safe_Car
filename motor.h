@@ -15,7 +15,7 @@
 
 //motor 초기화
 void initMotor() {
-    wiringPiSetupGpio();  // GPIO 핀 번호 사용
+    wiringPiSetup();  // GPIO 핀 번호 사용
 
     pinMode(IN1, OUTPUT);
     pinMode(IN2, OUTPUT);

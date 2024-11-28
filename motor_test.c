@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]){
 	initMotor();
-	while(1){
-		goForward(1000);
-	}
+	goForward(1000);
+	sleep(5);
+	stopMotor();
 }
