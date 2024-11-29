@@ -1,9 +1,11 @@
 #include "spi.h"
 #include "header.h"
 #include "joystick.h"
-#include "GPIO.h" 
+#include "GPIO.h"
 
 #define PORT 12345
+#define CLNT_ID "CONTROL"
+
 
 void* controller_to_car_output(void* arg) {
     int car_serv_sock = *(int*)arg;
@@ -12,7 +14,7 @@ void* controller_to_car_output(void* arg) {
     int count = 0;
     int joy_data[3];
     int prev_joy_data[2];
-    int base_joy_data[2] = { 0, };
+    int base_joy_data[2] = {512, 512};
 
     int base_cnt = 0;
 
@@ -38,7 +40,7 @@ void* controller_to_car_output(void* arg) {
                 if (base_cnt == 10) {
                     base_joy_data[0] = base_joy_data[0] / base_cnt;
                     base_joy_data[1] = base_joy_data[1] / base_cnt;
-                    
+
 
                     prev_joy_data[0] = base_joy_data[0];
                     prev_joy_data[1] = base_joy_data[1];
@@ -46,7 +48,9 @@ void* controller_to_car_output(void* arg) {
                 }
 
             }
-            else { //1초 후 부터 조이스틱 값 전송 가능
+            else 
+            
+            { //1초 후 부터 조이스틱 값 전송 가능
                 //저역통과 필터 단게
                 printf("before   -    X: %d  Y: %d   B: %d ||     ", joy_data[0], joy_data[1], joy_data[2]);
 
@@ -54,18 +58,18 @@ void* controller_to_car_output(void* arg) {
                 joy_data[1] = (int)(alpha * joy_data[1] + (1 - alpha) * prev_joy_data[1]);
                 prev_joy_data[0] = joy_data[0];
                 prev_joy_data[1] = joy_data[1];
-                
-                
+
+
                 if (joy_data[0] > base_joy_data[0]) {
                     if (joy_data[0] == 0)
                         joy_data[0] -= abs(base_joy_data[0] - 512);
                 }
-              
+
                 if (joy_data[1] > base_joy_data[1]) {
                     if (joy_data[1] == 0)
                         joy_data[1] -= abs(base_joy_data[1] - 512);
                 }
-               
+
 
                 //0, 0을 조이스틱의 중앙으로 설정
                 joy_data[0] = joy_data[0] - base_joy_data[0];
@@ -88,7 +92,7 @@ void* controller_to_car_output(void* arg) {
                     joy_data[1] -= 100;
                 else
                     joy_data[1] += 100;
-                    
+
                 //버튼이 안눌리면 1, 눌리면 0으로 전송(데이터 크기 줄이기)
                 if (joy_data[2])
                     joy_data[2] = 1;
@@ -103,14 +107,13 @@ void* controller_to_car_output(void* arg) {
 
 
             }
-            
+
         }
         count++;
         nanosleep(&delay, NULL);
     }
     return NULL;
 }
-
 
 int main(int argc, char* argv[]) {
     int car_serv_sock;
@@ -136,12 +139,10 @@ int main(int argc, char* argv[]) {
         perror("Connection failed");
         exit(EXIT_FAILURE);
     }
+    write(car_serv_sock, CLNT_ID, sizeof(CLNT_ID));
 
     pthread_t controller_to_car_output_thread;
-    
-        
     pthread_create(&controller_to_car_output_thread, NULL, controller_to_car_output, (void*)&car_serv_sock);
-
 
     pthread_join(controller_to_car_output_thread, NULL);
     close(car_serv_sock);
