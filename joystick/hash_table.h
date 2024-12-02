@@ -2,23 +2,24 @@
 #define HASH_TABLE_H
 
 #include "header.h"
+#include "lcd.h"
 
-#define TABLE_SIZE 3 // ÇØ½Ã Å×ÀÌºí Å©±â (¼Ò¼ö »ç¿ë ±ÇÀå)
+#define TABLE_SIZE 3 // í•´ì‹œ í…Œì´ë¸” í¬ê¸° (ì†Œìˆ˜ ì‚¬ìš© ê¶Œì¥)
 
-// ³ëµå ±¸Á¶Ã¼ (Ã¼ÀÌ´×À» À§ÇÑ ¿¬°á ¸®½ºÆ®)
+// ë…¸ë“œ êµ¬ì¡°ì²´ (ì²´ì´ë‹ì„ ìœ„í•œ ì—°ê²° ë¦¬ìŠ¤íŠ¸)
 typedef struct s_node {
-    char* key;              // ¹®ÀÚ¿­ Å°
-    int sock;               // ¼ÒÄÏ ¹øÈ£
-    struct s_node* next;    // ´ÙÀ½ ³ëµå (Ã¼ÀÌ´×¿ë)
+    char* key;              // ë¬¸ìì—´ í‚¤
+    int sock;               // ì†Œì¼“ ë²ˆí˜¸
+    struct s_node* next;    // ë‹¤ìŒ ë…¸ë“œ (ì²´ì´ë‹ìš©)
 } t_node;
 
-// ÇØ½Ã Å×ÀÌºí ±¸Á¶Ã¼
+// í•´ì‹œ í…Œì´ë¸” êµ¬ì¡°ì²´
 typedef struct {
-    t_node* buckets[TABLE_SIZE]; // ÇØ½Ã Å×ÀÌºíÀÇ ¹öÅ¶ ¹è¿­
-    int count;                   // ÀúÀåµÈ Ç×¸ñ ¼ö
+    t_node* buckets[TABLE_SIZE]; // í•´ì‹œ í…Œì´ë¸”ì˜ ë²„í‚· ë°°ì—´
+    int count;                   // ì €ì¥ëœ í•­ëª© ìˆ˜
 } t_hash_table;
 
-// DJB2 ÇØ½Ã ÇÔ¼ö
+// DJB2 í•´ì‹œ í•¨ìˆ˜
 unsigned long hash_func(const char* str) {
     unsigned long hash = 5381;
     int c;
@@ -28,7 +29,7 @@ unsigned long hash_func(const char* str) {
     return hash % TABLE_SIZE;
 }
 
-// ÇØ½Ã Å×ÀÌºí »ı¼º
+// í•´ì‹œ í…Œì´ë¸” ìƒì„±
 t_hash_table* create_table() {
     t_hash_table* table = (t_hash_table*)malloc(sizeof(t_hash_table));
     if (!table) {
@@ -42,51 +43,51 @@ t_hash_table* create_table() {
     return table;
 }
 
-// ³ëµå »ı¼º
+// ë…¸ë“œ ìƒì„±
 t_node* create_node(const char* key, int sock) {
     t_node* node = (t_node*)malloc(sizeof(t_node));
     if (!node) {
         perror("Failed to allocate memory for node");
         exit(EXIT_FAILURE);
     }
-    node->key = strdup(key);   // ¹®ÀÚ¿­ º¹»ç
-    node->sock = sock;         // ¼ÒÄÏ ¹øÈ£ ÀúÀå
+    node->key = strdup(key);   // ë¬¸ìì—´ ë³µì‚¬
+    node->sock = sock;         // ì†Œì¼“ ë²ˆí˜¸ ì €ì¥
     node->next = NULL;
     return node;
 }
 
-// µ¥ÀÌÅÍ Ãß°¡
+// ë°ì´í„° ì¶”ê°€
 void add_to_table(t_hash_table* table, const char* key, int sock) {
     unsigned long index = hash_func(key);
     t_node* new_node = create_node(key, sock);
 
-    // ÇØ´ç ¹öÅ¶¿¡ ³ëµå Ãß°¡ (Ã¼ÀÌ´×)
+    // í•´ë‹¹ ë²„í‚·ì— ë…¸ë“œ ì¶”ê°€ (ì²´ì´ë‹)
     if (!table->buckets[index]) {
         table->buckets[index] = new_node;
     }
     else {
-        // Ã¼ÀÌ´×À» À§ÇØ ¿¬°á ¸®½ºÆ®ÀÇ ¸Ç ¾Õ¿¡ Ãß°¡
+        // ì²´ì´ë‹ì„ ìœ„í•´ ì—°ê²° ë¦¬ìŠ¤íŠ¸ì˜ ë§¨ ì•ì— ì¶”ê°€
         new_node->next = table->buckets[index];
         table->buckets[index] = new_node;
     }
     table->count++;
 }
 
-// µ¥ÀÌÅÍ °Ë»ö
+// ë°ì´í„° ê²€ìƒ‰
 bool search_table(t_hash_table* table, const char* key) {
     unsigned long index = hash_func(key);
     t_node* current = table->buckets[index];
 
     while (current) {
         if (strcmp(current->key, key) == 0) {
-            return true; // ÇØ´ç Å°°¡ Á¸ÀçÇÏ¸é true ¹İÈ¯
+            return true; // í•´ë‹¹ í‚¤ê°€ ì¡´ì¬í•˜ë©´ true ë°˜í™˜
         }
         current = current->next;
     }
-    return false; // ÇØ´ç Å°°¡ ¾øÀ¸¸é false ¹İÈ¯
+    return false; // í•´ë‹¹ í‚¤ê°€ ì—†ìœ¼ë©´ false ë°˜í™˜
 }
 
-// µ¥ÀÌÅÍ »èÁ¦
+// ë°ì´í„° ì‚­ì œ
 bool remove_from_table(t_hash_table* table, const char* key) {
     unsigned long index = hash_func(key);
     t_node* current = table->buckets[index];
@@ -111,40 +112,50 @@ bool remove_from_table(t_hash_table* table, const char* key) {
     return false;
 }
 
-// Å°¸¦ ¸Å°³º¯¼ö·Î ¹Ş°í ÇØ´ç Å°ÀÇ sock °ªÀ» ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+// í‚¤ë¥¼ ë§¤ê°œë³€ìˆ˜ë¡œ ë°›ê³  í•´ë‹¹ í‚¤ì˜ sock ê°’ì„ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
 int get_sock_by_key(t_hash_table* table, const char* key) {
     unsigned long index = hash_func(key);
     t_node* current = table->buckets[index];
 
     while (current) {
         if (strcmp(current->key, key) == 0) {
-            return current->sock; // ÇØ´ç Å°¿¡ ´ëÀÀÇÏ´Â sock ¹İÈ¯
+            return current->sock; // í•´ë‹¹ í‚¤ì— ëŒ€ì‘í•˜ëŠ” sock ë°˜í™˜
         }
         current = current->next;
     }
-    // Å°°¡ Á¸ÀçÇÏÁö ¾ÊÀ¸¸é -1 (¿¡·¯ ÄÚµå) ¹İÈ¯
+    // í‚¤ê°€ ì¡´ì¬í•˜ì§€ ì•Šìœ¼ë©´ -1 (ì—ëŸ¬ ì½”ë“œ) ë°˜í™˜
     return -1;
 }
-
-// ÇØ½Ã Å×ÀÌºí ³» Å° °ªµéÀ» Ãâ·ÂÇÏ´Â ÇÔ¼ö
 void print_clients(t_hash_table* table) {
+    lcd_init();
+    lcd_m(LINE1);
+    int count = 0;
 
-    printf("\nConnected Clients\n");
-
-    // ÇØ½Ã Å×ÀÌºíÀÇ °¢ ¹öÅ¶À» È®ÀÎ
+    // í•´ì‹œ í…Œì´ë¸”ì˜ ê° ë²„í‚·ì„ í™•ì¸
     for (int i = 0; i < TABLE_SIZE; i++) {
         t_node* current = table->buckets[i];
 
-        // °¢ ¹öÅ¶ ³»ÀÇ ³ëµåµé Ãâ·Â
-        while (current) {
-            printf("%s\n", current->key);  // ÃÖ´ë 48±ÛÀÚ±îÁö ¸ÂÃß±â
+        // ê° ë²„í‚· ë‚´ì˜ ë…¸ë“œë“¤ ì¶œë ¥
+        while (current) {   
+            if (count < 2) {
+                print_str(current->key);
+                print_str(" ");
+            }
+            else if (count >= 2)
+            {
+                lcd_m(LINE2);
+                print_str(current->key);
+
+            }
+
+            count++;
             current = current->next;
         }
     }
-    printf("\n");
+
 }
 
-// ÇØ½Ã Å×ÀÌºí ¸Ş¸ğ¸® ÇØÁ¦
+// í•´ì‹œ í…Œì´ë¸” ë©”ëª¨ë¦¬ í•´ì œ
 void free_table(t_hash_table* table) {
     for (int i = 0; i < TABLE_SIZE; i++) {
         t_node* current = table->buckets[i];
