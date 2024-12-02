@@ -50,3 +50,7 @@
   - L289N 모터드라이브 ENA -> GPIO 18번, PWM0
   - L289N 모터드라이브 ENB -> GPIO 13번, PWM1
   - ENA는 원래 설정대로 잘 되었지만 ENB가 제대로 되지 않아 "gpio mode 23 pwm"으로 설정 후 해결
+
+ ###socket통신 connection refused 문제
+ - 서버 주소 설정 때 서버 포트번호가 제대로 들어가지 않은 문제였음
+ - servaddr.sin_port = htons(port); 같은 설정들을 다시 확인해볼 것
