@@ -14,11 +14,11 @@ void* controller_to_car_output(void* arg) {
     int count = 0;
     int joy_data[3];
     int prev_joy_data[2];
-    int base_joy_data[2] = {512, 512};
+    int base_joy_data[2] = {500, 500};
 
     int base_cnt = 0;
 
-    float alpha = 0.35;
+    float alpha = 0.4;
 
     struct timespec delay;
     delay.tv_sec = 0;
@@ -32,24 +32,7 @@ void* controller_to_car_output(void* arg) {
             memcpy(joy_data, temp, sizeof(joy_data)); // 배열 데이터 복사
 
             
-            base_cnt++;
-            if (base_cnt <= 10) {  //베이스 값 정하기
-                base_joy_data[0] += temp[0];
-                base_joy_data[1] += temp[1];
 
-                if (base_cnt == 10) {
-                    base_joy_data[0] = base_joy_data[0] / base_cnt;
-                    base_joy_data[1] = base_joy_data[1] / base_cnt;
-
-
-                    prev_joy_data[0] = base_joy_data[0];
-                    prev_joy_data[1] = base_joy_data[1];
-
-                }
-
-            }
-            else 
-            
             { //1초 후 부터 조이스틱 값 전송 가능
                 //저역통과 필터 단게
                 printf("before   -    X: %d  Y: %d   B: %d ||     ", joy_data[0], joy_data[1], joy_data[2]);
@@ -93,8 +76,10 @@ void* controller_to_car_output(void* arg) {
                 else
                     joy_data[1] += 100;
 
-                //버튼이 안눌리면 1, 눌리면 0으로 전송(데이터 크기 줄이기)
-                if (joy_data[2])
+                //버튼이 안눌리면 1, 눌리면 0으로 전송
+                if (joy_data[2] < 10)
+                    joy_data[2] = 0;
+                else
                     joy_data[2] = 1;
 
                 printf("after   -    X: %d  Y: %d  B : %d\n", joy_data[0], joy_data[1], joy_data[2]);
