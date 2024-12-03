@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <linux/spi/spidev.h>
 #include <sys/time.h>
+#include <pthread.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 // GPIO setting
 #define GPIO_PATH "/sys/class/gpio"
@@ -19,6 +22,30 @@
 #define SPI_BITS 8
 #define SPI_SPEED 1000000
 #define SPI_DELAY 5
+
+//서버 IP와 port 나중에 받아서 계산하도록 바꾸기
+#define PORT 12345
+#define serverip "192.168.20.1"
+//여기 채워야돼!!!#######
+
+
+//센서 임계값 가중치
+#define DISTANCE_THRESHOLD 15.0f  // Distance threshold in cm
+#define PRESSURE_THRESHOLD 512    // Pressure sensor threshold (ADC value)
+#define TOUCH_WEIGHT 10           // Weight for touch sensor when 0 (no hands on)
+#define DISTANCE_WEIGHT 5         // Weight for distance sensor
+#define PRESSURE_WEIGHT 15        // Weight for pressure sensor
+#define WEIGHT_THRESHOLD 50       // Total weight threshold for triggering the server
+#define WEIGHT_LOSS_RATE 1        // weight loss per time
+
+int totalWeight = 0; //센서가 sos를 보낼 총 가중치값
+
+
+void error_handling(char *message) {
+  fputs(message, stderr);
+  fputc('\n', stderr);
+  exit(1);
+}
 
 // GPIO Export (GPIO activation set)
 int gpioExport(int pin) {
@@ -117,7 +144,91 @@ float measureDistance() {
     return (float)(duration * 0.034) / 2;
 }
 
-int main() {
+
+
+
+//socket communication to send data to server 서버한테 소켓 보내기
+void *send2server(){
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == -1){
+        perror("Socket creation failed");
+        return;
+    }
+
+    struct sockaddr_in servAddr;
+    servAddr.sin_family = AF_INET;
+    servAddr.sin_port = htons(PORT);
+    servAddr.sin_addr.s_addr = inet_addr(serverip);
+
+    if(connect(sock, (struct sockaddr *) &servAddr, sizeof(servAddr)) < 0) {
+        perror("Connection to server failed");
+        close(sock);
+        return;
+    }
+    while(1) {
+        if (totalWeight < 100) {
+            send(sock, "warning_0", 9, 0);
+        }
+        else if (totalWeight < 200) {
+            send(sock, "warning_1", 9, 0);
+        }
+        else {
+            send(sock, "warning_2", 9, 0);
+            totalWeight = 0;
+        }
+        totalWeight -= 1;
+        sleep(0.2);
+    }
+
+
+    close(sock);
+
+}
+
+void *touchthread(void *arg) {
+    while (1) {
+        int touchState = gpioRead(TOUCH_PIN);
+        if (touchState == 0) {
+            totalWeight += TOUCH_WEIGHT;
+        }
+        sleep(1);
+    }
+}
+
+// Pressure sensor thread
+void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 생각해보기
+    int spi_fd = open(SPI_DEVICE, O_RDWR);
+    if (spi_fd < 0) {
+        perror("Failed to open SPI Device");
+        return NULL;
+    }
+
+    while (1) {
+        int touchState = gpioRead(TOUCH_PIN);
+        if (touchState == 0) {
+            int pressureValue = readADC(spi_fd, 0);
+            if (pressureValue > PRESSURE_THRESHOLD) {
+                totalWeight += PRESSURE_WEIGHT;
+            }
+        }
+        sleep(1);
+    }
+    close(spi_fd);
+}
+
+// Ultrasonic sensor thread
+void *USthread(void *arg) {
+    while (1) {
+        float distance = measureDistance();
+        if (distance < DISTANCE_THRESHOLD) {
+            totalWeight += DISTANCE_WEIGHT;
+        }
+        sleep(1);
+    }
+}
+
+
+int main(int argc, const char* argv[]) {
     // GPIO reset & acitvate
     gpioExport(TRIG_PIN);
     gpioExport(ECHO_PIN);
@@ -143,6 +254,17 @@ int main() {
         close(spi_fd);
         return -1;
     }
+
+    pthread_t touch, pressure, USsensor, sendsock;
+    pthread_create(&touch, NULL, touchthread, NULL);
+    pthread_create(&pressure, NULL, pressurethread, NULL);
+    pthread_create(&USsensor, NULL, USthread, NULL);
+    pthread_create(&sendsock, NULL, send2server, NULL);
+
+    pthread_join(touch, NULL);
+    pthread_join(pressure, NULL);
+    pthread_join(USsensor, NULL);
+    pthread_join(sendsock, NULL);
 
     while (1) { //1 scan per sec
         // US sensor distance Scan
