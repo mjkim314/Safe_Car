@@ -47,7 +47,7 @@ void goForward(int spd) {
     PWMWriteDutyCycle(ENA, spd * 10000);
     PWMWriteDutyCycle(ENB, spd * 10000);
 }
-=
+
 void goSmoothLeft(int spd, int spd2) {
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
@@ -66,7 +66,6 @@ void goSmoothRight(int spd, int spd2) {
 
     PWMWriteDutyCycle(ENA, spd2 * 8000);
     PWMWriteDutyCycle(ENB, spd * 10000);
->>>>>>> bb36ffde3483c55e54637ae6fabd77754fbad627:joystick/motor.h
 }
 
 void goBackward(int spd) {
@@ -89,7 +88,7 @@ void turnLeft(int spd) {
     PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
-    void turnRight(int spd) {
+void turnRight(int spd) {
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     digitalWrite(IN3, LOW);
@@ -99,4 +98,23 @@ void turnLeft(int spd) {
     PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
+void changeDutyCycle(int direction, int spd1, int spd2){
+	switch(direction){
+		case 1: //forward
+			digitalWrite(IN1, LOW);
+			digitalWrite(IN2, HIGH);
+			digitalWrite(IN3, HIGH);
+			digitalWrite(IN4, LOW);
+			break;
+		case 0: //backward
+			digitalWrite(IN1, HIGH);
+			digitalWrite(IN2, LOW);
+			digitalWrite(IN3, LOW);
+			digitalWrite(IN4, HIGH);
+			break;
+	}
+	PWMWriteDutyCycle(ENA, abs(spd1) * 20000);
+	PWMWriteDutyCycle(ENB, abs(spd2) * 20000);
+
+}
 #endif

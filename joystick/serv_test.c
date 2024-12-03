@@ -179,7 +179,15 @@ void* control_motor(void* arg) {
 			stopMotor();
 		}
 
+		if (joy_data[1] > 0){
+			changeDutyCycle(1, joy_data[0], joy_data[1]);
+		}
+		else if (joy_data[1] < 0){
+			changeDutyCycle(0, joy_data[0], joy_data[1]);
+		}
+
 		//정상 작동시 코드
+		/*
 		if (joy_data[1] > 0 && joy_data[0] == 0){
 			goForward(joy_data[1] + 600);
 		}
@@ -198,6 +206,7 @@ void* control_motor(void* arg) {
 		else if (joy_data[1] == 0 && joy_data[0] < 0){
 			turnLeft(joy_data[0]+600);
 		}
+		*/
 
 	}
 

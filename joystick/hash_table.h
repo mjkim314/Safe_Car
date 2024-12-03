@@ -126,6 +126,7 @@ int get_sock_by_key(t_hash_table* table, const char* key) {
     // 키가 존재하지 않으면 -1 (에러 코드) 반환
     return -1;
 }
+/*
 void print_clients(t_hash_table* table) {
     lcd_init();
     lcd_m(LINE1);
@@ -154,6 +155,7 @@ void print_clients(t_hash_table* table) {
     }
 
 }
+*/
 
 // 해시 테이블 메모리 해제
 void free_table(t_hash_table* table) {
