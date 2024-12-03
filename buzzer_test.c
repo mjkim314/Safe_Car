@@ -33,7 +33,7 @@ int main() {
     int melody[] = {440, 494, 523, 587, 659, 698, 784}; // 도레미파솔라시
     int noteDurations[] = {500, 500, 500, 500, 500, 500, 500}; // 각 음의 지속 시간
 
-    int song[] = {2637, 2793, 3135};
+    int song[] = {1318, 1396, 1567};
     while(1){
         for (int i=0; i<3; i++){
             playTone(song[i], 600);

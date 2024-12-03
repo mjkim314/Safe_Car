@@ -59,7 +59,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 			}
 
 			memset(buffer, 0, sizeof(buffer));
-			snprintf(buffer, sizeof(buffer), "%s", "CONTROL");
+			snprintf(buffer, sizeof(buffer), "CONTROL");
 
 			if (search_table(clnt_info, "SAFETY")) {
 				strcat(buffer, ", SAFETY");
@@ -69,7 +69,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 
 			}
 
-			write(car_clnt_sock, buffer, sizeof(buffer) - 1);
+			write(car_clnt_sock, buffer, sizeof(buffer));
 		}
 		else { //컨트롤러가 연결이 안돼있을 때(모터 제어 x라던가 기능 적용해야 함)
 
@@ -99,9 +99,12 @@ void* detect_safety(void* arg) {
 				//받은 값에 따라 어떤 행동을 할 지 결정
 				if (strncmp(buffer, "Warning_1", sizeof("Warning_1")) == 0) {
 					//1번 케이스는 모터 잠깐 멈춰서 사용자 깨우기
+					printf("warning1\n");
 				}
 				else if (strncmp(buffer, "Warning_2", sizeof("Warning_2")) == 0) {
 					//2번 케이스는 비상등 점등, 부저 울리기, 모터 천천히 멈추기
+					printf("warning2\n");
+
 				}
 
 			}
@@ -111,6 +114,8 @@ void* detect_safety(void* arg) {
 				remove_from_table(clnt_info, "SAFETY");
 				
 				clnt_count--;
+
+				print_clients(clnt_info);
 				pthread_exit(NULL);
 
 			}
@@ -363,6 +368,7 @@ int main(int argc, char *argv[])
 				/*
 				운전자 이상 감지 시스템에서 작동할 스레드나 모터 제어 스레드에 어떤식으로 제어할 지 실행 코드 작성 필요
 				*/
+				print_clients(clnt_info);
 
 			}
 			else {

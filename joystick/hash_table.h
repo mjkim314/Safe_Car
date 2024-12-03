@@ -126,34 +126,23 @@ int get_sock_by_key(t_hash_table* table, const char* key) {
     // 키가 존재하지 않으면 -1 (에러 코드) 반환
     return -1;
 }
+<<<<<<< HEAD
 /*
+=======
+// 해시 테이블 내 키 값들을 출력하는 함수
+>>>>>>> 1d9b7b01a19cfb8bd00691251f8e078654fd2285
 void print_clients(t_hash_table* table) {
-    lcd_init();
-    lcd_m(LINE1);
-    int count = 0;
-
+    printf("\nConnected Clients\n");
     // 해시 테이블의 각 버킷을 확인
     for (int i = 0; i < TABLE_SIZE; i++) {
         t_node* current = table->buckets[i];
-
         // 각 버킷 내의 노드들 출력
-        while (current) {   
-            if (count < 2) {
-                print_str(current->key);
-                print_str(" ");
-            }
-            else if (count >= 2)
-            {
-                lcd_m(LINE2);
-                print_str(current->key);
-
-            }
-
-            count++;
+        while (current) {
+            printf("%s\n", current->key);  // 최대 48글자까지 맞추기
             current = current->next;
         }
     }
-
+    printf("\n");
 }
 */
 
