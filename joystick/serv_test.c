@@ -53,23 +53,13 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 				close(get_sock_by_key(clnt_info, "CONTROL"));
 				remove_from_table(clnt_info, "CONTROL");
 
+				print_clients(clnt_info);
 				clnt_count--;
 
 				pthread_exit(NULL);
 			}
+			
 
-			memset(buffer, 0, sizeof(buffer));
-			snprintf(buffer, sizeof(buffer), "CONTROL");
-
-			if (search_table(clnt_info, "SAFETY")) {
-				strcat(buffer, ", SAFETY");
-			}	
-			if (search_table(clnt_info, "CRASH")) {
-				strcat(buffer, ", CRASH");
-
-			}
-
-			write(car_clnt_sock, buffer, sizeof(buffer));
 		}
 		else { //컨트롤러가 연결이 안돼있을 때(모터 제어 x라던가 기능 적용해야 함)
 
@@ -82,6 +72,41 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 	return NULL;
 }
 
+void* car_to_controller_lcd(void* arg) {
+	int car_clnt_sock = *(int*)arg;
+	char buffer[36];
+	struct timespec delay;
+	delay.tv_sec = 0;
+	delay.tv_nsec = 10000000;
+	int count = 0;
+
+	while (1) {
+		if (search_table(clnt_info, "CONTROL") && count % 150 == 0) {
+			memset(buffer, 0, sizeof(buffer));
+			snprintf(buffer, sizeof(buffer), "CONTROL");
+
+			if (search_table(clnt_info, "SAFETY")) {
+				strcat(buffer, ", SAFETY");
+			}
+			if (search_table(clnt_info, "CRASH")) {
+				strcat(buffer, ", CRASH");
+
+			}
+			write(car_clnt_sock, buffer, sizeof(buffer));
+		}
+		else if (!search_table(clnt_info, "CONTROL")) {
+			pthread_exit(NULL);
+		}
+
+		printf("lcd buffer :  %s\n", buffer);
+		count++;
+		nanosleep(&delay, NULL);
+
+			
+	}
+
+}
+
 void* detect_safety(void* arg) { 
 	char buffer[256];
 	ssize_t bytes_read;
@@ -92,12 +117,11 @@ void* detect_safety(void* arg) {
 
 	while (1) {
 		
-		if (search_table(clnt_info, "SAFETY") && count % 50 == 0) { // 0.5초마다 값 읽기
+		if (search_table(clnt_info, "SAFETY") && count % 30 == 0) { // 0.5초마다 값 읽기
 			bytes_read = read(get_sock_by_key(clnt_info, "SAFETY"), buffer, sizeof(buffer) - 1);
 			
 			if(bytes_read > 0) {
 
-				printf("%s\n", buffer);
 				//받은 값에 따라 어떤 행동을 할 지 결정
 				if (strncmp(buffer, "Warning_1", sizeof("Warning_1")) == 0) {
 					//1번 케이스는 모터 잠깐 멈춰서 사용자 깨우기
@@ -113,6 +137,8 @@ void* detect_safety(void* arg) {
 				close(get_sock_by_key(clnt_info, "SAFETY"));
 				remove_from_table(clnt_info, "SAFETY");
 				
+				print_clients(clnt_info);
+
 				clnt_count--;
 
 				print_clients(clnt_info);
@@ -133,7 +159,6 @@ void* detect_safety(void* arg) {
 	return NULL;
 
 }
-
 
 void* detect_crash(void* arg) {
 	char buffer[256];
@@ -175,17 +200,17 @@ void* detect_crash(void* arg) {
 void* control_motor(void* arg) {
 
 	while (1) {
-		if (search_table(clnt_info, "CONTROL") || search_table(clnt_info, "SAFETY")) {
+		if (!search_table(clnt_info, "CONTROL") || !search_table(clnt_info, "SAFETY")) {
 			pthread_exit(NULL);
 		}	
 		
-		if (search_table(clnt_info, "CRASH")) {
-			//긴급정지 코드
-			stopMotor();
+		if (!search_table(clnt_info, "CRASH")) {
+			//CRASH 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
+
 		}
 
 		//정상 작동시 코드
-		if (joy_data[1] > 0 && joy_/data[0] == 0){
+		if (joy_data[1] > 0 && joy_data[0] == 0){
 			goForward(joy_data[1] + 600);
 		}
 		else if (joy_data[1] < 0 && joy_data[0] == 0){
@@ -193,7 +218,7 @@ void* control_motor(void* arg) {
 		}
 		else if (joy_data[1] > 0 && joy_data[0] > 0){
 			goSmoothRight(joy_data[1] + 600, joy_data[0]+600);
-		}	23
+		}
 		else if (joy_data[1] > 0 && joy_data[0] < 0){
 			goSmoothLeft(joy_data[1] + 600, joy_data[0]+600);
 		}
@@ -262,7 +287,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-
     int car_serv_sock, car_clnt_sock;
 	struct sockaddr_in car_serv_addr;
 	struct sockaddr_in car_clnt_addr;
@@ -292,6 +316,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+
+	pthread_t detect_crash_thread;
+	pthread_create(&detect_crash_thread, NULL, detect_crash, NULL);
+	pthread_detach(detect_crash_thread); //만약 연결 안돼있으면 이 스레드에서 해시테이블에 추가
+
 	while (1) { //반복문으로 클라이언트 연결 계속 확인
 
 
@@ -300,17 +329,6 @@ int main(int argc, char *argv[])
 			char buffer[256];
 			memset(buffer, 0, sizeof(buffer));
 
-			/*
-			* spi 통신으로 연결돼있는지 확인할 조건문(연결이 끊겼다가 다시 재연결할때 조건문으로 확인 후 연결시킬 필요가 있음, spi 통신 선이 연결돼있는지 확인할 수 있는 코드가 있으면 좋음)
-			if (!search_table(clnt_info, "CRASH") && 여기에 연결됐다는 확인하는 조건문)
-			{
-				해시테이블에 입력 받은 id 추가
-				add_to_table(clnt_info, "CRASH", 0);
-				clnt_count++;
-				
-				
-			}
-			*/
 
 			if ((car_clnt_sock = accept(car_serv_sock, (struct sockaddr*)&car_clnt_addr, &car_clnt_addr_size)) < 0)
 			{
@@ -336,17 +354,20 @@ int main(int argc, char *argv[])
 
 				add_to_table(clnt_info, "CONTROL", car_clnt_sock);
 
-				//모터 제어 스레드 추가할 것
-				pthread_t controller_to_car_input_joy_thread, controller_to_car_input_btn_thread, control_motor_thread;
+				pthread_t controller_to_car_input_joy_thread, controller_to_car_input_btn_thread, control_motor_thread, car_to_controller_lcd_thread;
 
 				pthread_create(&controller_to_car_input_joy_thread, NULL, controller_to_car_input_joy, (void*)&car_clnt_sock);
 				pthread_create(&controller_to_car_input_btn_thread, NULL, controller_to_car_input_btn, (void*)&car_clnt_sock);
 				pthread_create(&control_motor_thread, NULL, control_motor, NULL);
+				pthread_create(&car_to_controller_lcd_thread, NULL, car_to_controller_lcd, (void*)&car_clnt_sock);
 
 				pthread_detach(controller_to_car_input_joy_thread);
 				pthread_detach(controller_to_car_input_btn_thread);
 				pthread_detach(control_motor_thread);
+				pthread_detach(car_to_controller_lcd_thread);
+
 				clnt_count++;
+				print_clients(clnt_info);
 
 				
 
@@ -358,10 +379,8 @@ int main(int argc, char *argv[])
 				pthread_t detect_safety_thread;
 				pthread_create(&detect_safety_thread, NULL, detect_safety, (void*)&car_clnt_sock);
 				pthread_detach(detect_safety_thread);
-
-				/*
-				운전자 이상 감지 시스템에서 작동할 스레드나 모터 제어 스레드에 어떤식으로 제어할 지 실행 코드 작성 필요
-				*/
+				
+				clnt_count++;
 				print_clients(clnt_info);
 
 			}
