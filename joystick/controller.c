@@ -2,10 +2,10 @@
 #include "header.h"
 #include "joystick.h"
 #include "GPIO.h"
+#include "lcd.h"
 
 #define PORT 12345
 #define CLNT_ID "CONTROL"
-
 
 void* controller_to_car_output(void* arg) {
     int car_serv_sock = *(int*)arg;
@@ -77,7 +77,7 @@ void* controller_to_car_output(void* arg) {
                     joy_data[1] += 100;
 
                 //버튼이 안눌리면 1, 눌리면 0으로 전송
-                if (joy_data[2] < 10)
+                if (joy_data[2] < 50)
                     joy_data[2] = 0;
                 else
                     joy_data[2] = 1;
@@ -96,6 +96,63 @@ void* controller_to_car_output(void* arg) {
         }
         count++;
         nanosleep(&delay, NULL);
+    }
+    return NULL;
+}
+
+
+void* check_clnt_lcd(void* arg) {
+    int serv_sock = *(int*)arg;
+    char buffer[256];
+
+    while (1) {
+        struct timespec delay;
+        delay.tv_sec = 0;
+        delay.tv_nsec = 10000000;
+        int count = 0;
+
+        if (count % 10 == 0) {
+            ssize_t bytes_read = read(serv_sock, buffer, sizeof(buffer) - 1);
+
+            if (bytes_read > 0) {
+                char str1[17] = { 0 }; // 처음 16자를 저장할 공간 (NULL 문자 포함)
+                char str2[37] = { 0 }; // 나머지 문자를 저장할 공간
+                if (strlen(buffer) > 16) {
+                    strncpy(str1, buffer, 16); // 처음 16자 복사
+                    str1[16] = '\0'; // NULL 문자 추가
+                    strncpy(str2, buffer + 16, sizeof(str2) - 1); // 17번째 문자부터 복사
+                    str2[sizeof(str2) - 1] = '\0'; // NULL 문자 추가
+                }
+                else {
+                    strncpy(str1, buffer, sizeof(str1) - 1); // buffer 전체를 str1에 복사
+                    str1[sizeof(str1) - 1] = '\0'; // NULL 문자 추가
+                }
+
+                lcd_init();
+                lcd_m(LINE1);
+                print_str(str1);
+
+                lcd_m(LINE2);
+                print_str(str2);
+
+                
+
+            }
+            else
+            {
+                
+                lcd_init();
+                lcd_m(LINE1);
+                print_str("Lost connection to server");
+                usleep(1000000);
+                pthread_exit(NULL);
+
+            }
+        }
+        memset(buffer, 0, sizeof(buffer));
+        count++;
+        nanosleep(&delay, NULL);
+
     }
     return NULL;
 }
@@ -126,10 +183,13 @@ int main(int argc, char* argv[]) {
     }
     write(car_serv_sock, CLNT_ID, sizeof(CLNT_ID));
 
-    pthread_t controller_to_car_output_thread;
+    pthread_t controller_to_car_output_thread, check_clnt_lcd_thread;
     pthread_create(&controller_to_car_output_thread, NULL, controller_to_car_output, (void*)&car_serv_sock);
+    pthread_create(&check_clnt_lcd_thread, NULL, check_clnt_lcd, (void*)&car_serv_sock);
 
+    pthread_detach(check_clnt_lcd_thread);
     pthread_join(controller_to_car_output_thread, NULL);
+
     close(car_serv_sock);
     return 0;
 }

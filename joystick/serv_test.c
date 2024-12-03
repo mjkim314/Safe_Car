@@ -25,7 +25,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 
     while (1) {
 
-		if (search_table(clnt_info, "CONTROL") && count % 10 == 0) { //0.2초마다 조이스틱 값 읽기(연결 체크)
+		if (search_table(clnt_info, "CONTROL") && count % 10 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
 
 			int bytes_read = read(car_clnt_sock, buffer, sizeof(buffer) - 1);
 
@@ -39,26 +39,37 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 				for (int i = 0; i < 3; i++) {
 					joy_data[i] = ntohl(joy_data[i]);
 				}
+				/*
+				if (count <= 30) { //처음 3번의 값은 입력 x
+					joy_data[0] = 0;
+					joy_data[1] = 0;
 
+				}*/
 
-				//printf("X: %d  Y: %d  B: %d\n", joy_data[0], joy_data[1], joy_data[2]);
+				printf("X: %d  Y: %d  B: %d\n", joy_data[0], joy_data[1], joy_data[2]);
 			}
 			else 
 			{
 				close(get_sock_by_key(clnt_info, "CONTROL"));
 				remove_from_table(clnt_info, "CONTROL");
 
-				lcd_init();
-				lcd_m(LINE1);
-				print_str("CONTROL client");
-				lcd_m(LINE2);
-				print_str("is disconnected");
-				usleep(1000000);				
 				clnt_count--;
 
-				print_clients(clnt_info);
 				pthread_exit(NULL);
 			}
+
+			memset(buffer, 0, sizeof(buffer));
+			snprintf(buffer, sizeof(buffer), "%s", "CONTROL");
+
+			if (search_table(clnt_info, "SAFETY")) {
+				strcat(buffer, ", SAFETY");
+			}	
+			if (search_table(clnt_info, "CRASH")) {
+				strcat(buffer, ", CRASH");
+
+			}
+
+			write(car_clnt_sock, buffer, sizeof(buffer) - 1);
 		}
 		else { //컨트롤러가 연결이 안돼있을 때(모터 제어 x라던가 기능 적용해야 함)
 
@@ -99,15 +110,7 @@ void* detect_safety(void* arg) {
 				close(get_sock_by_key(clnt_info, "SAFETY"));
 				remove_from_table(clnt_info, "SAFETY");
 				
-				lcd_init();
-				lcd_m(LINE1);
-				print_str("SAFETY client");
-				lcd_m(LINE2);
-				print_str("is disconnected");
-				usleep(1000000);
 				clnt_count--;
-
-				print_clients(clnt_info);
 				pthread_exit(NULL);
 
 			}
@@ -143,15 +146,8 @@ void* detect_crash(void* arg) {
 			{
 				remove_from_table(clnt_info, "CRASH");
 				
-				lcd_init();
-				lcd_m(LINE1);
-				print_str("CRASH client");
-				lcd_m(LINE2);
-				print_str("is disconnected");
-				usleep(1000000);
 				clnt_count--;
 
-				print_clients(clnt_info);
 
 			}
 			else { //정상적으로 받았을 때 읽을 값에 따라 모터를 정지할 것인지 조건문 추가할 것
@@ -169,7 +165,7 @@ void* detect_crash(void* arg) {
 	}
 	return NULL;
 
-}s
+}
 
 void* control_motor(void* arg) {
 
@@ -261,11 +257,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	fd = wiringPiI2CSetup(LCD_ADDR);  // I2C 장치 설정 (주소는 0x27)
-	if (fd == -1) {
-		printf("LCD initialization failed.\n");
-		return -1;
-	}
 
     int car_serv_sock, car_clnt_sock;
 	struct sockaddr_in car_serv_addr;
@@ -312,13 +303,7 @@ int main(int argc, char *argv[])
 				add_to_table(clnt_info, "CRASH", 0);
 				clnt_count++;
 				
-				lcd_init();
-				lcd_m(LINE1);
-				print_str("CRASH client");
-				lcd_m(LINE2);
-				print_str("is connected");
-				usleep(1000000);
-				print_clients(clnt_info);
+				
 			}
 			*/
 
@@ -358,33 +343,18 @@ int main(int argc, char *argv[])
 				pthread_detach(control_motor_thread);
 				clnt_count++;
 
-				lcd_init();
-				lcd_m(LINE1);
-				print_str("CONTROL client");
-				lcd_m(LINE2);
-				print_str("is connected");
-				usleep(1000000);
-				print_clients(clnt_info);
+				
 
 
 			}
 			else if (strncmp(buffer, "SAFERTY", strlen("SAFETY")) == 0) {
 				add_to_table(clnt_info, "SAFERTY", car_clnt_sock);
-
+				
 
 				/*
 				운전자 이상 감지 시스템에서 작동할 스레드나 모터 제어 스레드에 어떤식으로 제어할 지 실행 코드 작성 필요
 				*/
 
-
-				clnt_count++;
-				lcd_init();
-				lcd_m(LINE1);
-				print_str("SAFETY client");
-				lcd_m(LINE2);
-				print_str("is connected");
-				usleep(1000000);
-				print_clients(clnt_info);
 			}
 			else {
 				printf("Client id is not valid\n");
