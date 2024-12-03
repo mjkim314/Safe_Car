@@ -98,23 +98,38 @@ void turnRight(int spd) {
     PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
-void changeDutyCycle(int direction, int x, int y){
-	switch(direction){
-		case 1: //forward
-			digitalWrite(IN1, LOW);
-			digitalWrite(IN2, HIGH);
-			digitalWrite(IN3, HIGH);
-			digitalWrite(IN4, LOW);
-			break;
-		case 0: //backward
-			digitalWrite(IN1, HIGH);
-			digitalWrite(IN2, LOW);
-			digitalWrite(IN3, LOW);
-			digitalWrite(IN4, HIGH);
-			break;
-	}
-	PWMWriteDutyCycle(ENA, abs(spd1) * 20000);
-	PWMWriteDutyCycle(ENB, abs(spd2) * 20000);
-
+void changeDutyCycle(int x, int y){
+	if (y > 0){ //foward
+        digitalWrite(IN1, LOW);
+        digitalWrite(IN2, HIGH);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, LOW);
+        if (x > -30 && x < 30){//그냥 전진
+            PWMWriteDutyCycle(ENA, abs(y) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+        }else if(x < 0){//x값 따라
+            PWMWriteDutyCycle(ENA, abs(abs(y)-abs(x)) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+        }else if(x > 0){//x값 따라
+            PWMWriteDutyCycle(ENA, abs(y) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(abs(y)-abs(x)) * 20000);
+        }
+    }
+    else{ //backward
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, LOW);
+        digitalWrite(IN3, LOW);
+        digitalWrite(IN4, HIGH);
+        if (x > -30 && x < 30){//그냥 직진
+            PWMWriteDutyCycle(ENA, abs(y) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+        }else if(x < 0){//x값 따라
+            PWMWriteDutyCycle(ENA, abs(abs(y)-abs(x)) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+        }else if(x > 0){//x값 따라
+            PWMWriteDutyCycle(ENA, abs(y) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(abs(y)-abs(x)) * 20000);
+        }
+    }
 }
 #endif
