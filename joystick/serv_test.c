@@ -23,7 +23,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 	delay.tv_nsec = 10000000;
 	int count = 0;
 
-    while (1) {
+    while (1) {	
 
 		if (search_table(clnt_info, "CONTROL") && count % 1 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
 
@@ -46,7 +46,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 
 				}*/
 
-				printf("X: %d  Y: %d  B: %d\n", joy_data[0], joy_data[1], joy_data[2]);
+				//printf("X: %d  Y: %d  B: %d\n", joy_data[0], joy_data[1], joy_data[2]);
 			}
 			else 
 			{
@@ -96,14 +96,14 @@ void* detect_safety(void* arg) {
 			bytes_read = read(get_sock_by_key(clnt_info, "SAFETY"), buffer, sizeof(buffer) - 1);
 			
 			if(bytes_read > 0) {
+
+				printf("%s\n", buffer);
 				//받은 값에 따라 어떤 행동을 할 지 결정
 				if (strncmp(buffer, "Warning_1", sizeof("Warning_1")) == 0) {
 					//1번 케이스는 모터 잠깐 멈춰서 사용자 깨우기
-					printf("warning1\n");
 				}
 				else if (strncmp(buffer, "Warning_2", sizeof("Warning_2")) == 0) {
 					//2번 케이스는 비상등 점등, 부저 울리기, 모터 천천히 멈추기
-					printf("warning2\n");
 
 				}
 
@@ -175,9 +175,7 @@ void* detect_crash(void* arg) {
 void* control_motor(void* arg) {
 
 	while (1) {
-
-		printf("## %d ## %d ##\n", joy_data[0], joy_data[1]);
-		if (!search_table(clnt_info, "CONTROL") && !search_table(clnt_info, "SAFETY")) {
+		if (search_table(clnt_info, "CONTROL") || search_table(clnt_info, "SAFETY")) {
 			pthread_exit(NULL);
 		}	
 		
@@ -186,16 +184,8 @@ void* control_motor(void* arg) {
 			stopMotor();
 		}
 
-		if (joy_data[1] > 0){
-			changeDutyCycle(1, joy_data[0], joy_data[1]);
-		}
-		else if (joy_data[1] < 0){
-			changeDutyCycle(0, joy_data[0], joy_data[1]);
-		}
-
 		//정상 작동시 코드
-		/*
-		if (joy_data[1] > 0 && joy_data[0] == 0){
+		if (joy_data[1] > 0 && joy_/data[0] == 0){
 			goForward(joy_data[1] + 600);
 		}
 		else if (joy_data[1] < 0 && joy_data[0] == 0){
@@ -203,7 +193,7 @@ void* control_motor(void* arg) {
 		}
 		else if (joy_data[1] > 0 && joy_data[0] > 0){
 			goSmoothRight(joy_data[1] + 600, joy_data[0]+600);
-		}
+		}	23
 		else if (joy_data[1] > 0 && joy_data[0] < 0){
 			goSmoothLeft(joy_data[1] + 600, joy_data[0]+600);
 		}
@@ -213,7 +203,6 @@ void* control_motor(void* arg) {
 		else if (joy_data[1] == 0 && joy_data[0] < 0){
 			turnLeft(joy_data[0]+600);
 		}
-		*/
 
 	}
 
@@ -261,7 +250,6 @@ void* controller_to_car_input_buzz(void* arg) { //버튼 눌렀을 때 부저 �
 
 int main(int argc, char *argv[])
 {
-	initMotor();
 
     if (argc != 1)
     {
@@ -364,9 +352,12 @@ int main(int argc, char *argv[])
 
 
 			}
-			else if (strncmp(buffer, "SAFERTY", strlen("SAFETY")) == 0) {
-				add_to_table(clnt_info, "SAFERTY", car_clnt_sock);
-				
+			else if (strncmp(buffer, "SAFETY", strlen("SAFETY")) == 0) {
+
+				add_to_table(clnt_info, "SAFETY", car_clnt_sock);
+				pthread_t detect_safety_thread;
+				pthread_create(&detect_safety_thread, NULL, detect_safety, (void*)&car_clnt_sock);
+				pthread_detach(detect_safety_thread);
 
 				/*
 				운전자 이상 감지 시스템에서 작동할 스레드나 모터 제어 스레드에 어떤식으로 제어할 지 실행 코드 작성 필요
