@@ -25,7 +25,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 
     while (1) {
 
-		if (search_table(clnt_info, "CONTROL") && count % 10 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
+		if (search_table(clnt_info, "CONTROL") && count % 1 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
 
 			int bytes_read = read(car_clnt_sock, buffer, sizeof(buffer) - 1);
 
@@ -175,7 +175,9 @@ void* detect_crash(void* arg) {
 void* control_motor(void* arg) {
 
 	while (1) {
-		if (search_table(clnt_info, "CONTROL") || search_table(clnt_info, "SAFETY")) {
+
+		printf("## %d ## %d ##\n", joy_data[0], joy_data[1]);
+		if (!search_table(clnt_info, "CONTROL") && !search_table(clnt_info, "SAFETY")) {
 			pthread_exit(NULL);
 		}	
 		

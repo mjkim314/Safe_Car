@@ -98,7 +98,7 @@ void turnRight(int spd) {
     PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
-void changeDutyCycle(int direction, int spd1, int spd2){
+void changeDutyCycle(int direction, int x, int y){
 	switch(direction){
 		case 1: //forward
 			digitalWrite(IN1, LOW);
