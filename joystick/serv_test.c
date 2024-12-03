@@ -259,6 +259,7 @@ void* controller_to_car_input_buzz(void* arg) { //버튼 눌렀을 때 부저 �
 
 int main(int argc, char *argv[])
 {
+	initMotor();
 
     if (argc != 1)
     {

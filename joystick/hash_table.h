@@ -126,11 +126,8 @@ int get_sock_by_key(t_hash_table* table, const char* key) {
     // 키가 존재하지 않으면 -1 (에러 코드) 반환
     return -1;
 }
-<<<<<<< HEAD
-/*
-=======
+
 // 해시 테이블 내 키 값들을 출력하는 함수
->>>>>>> 1d9b7b01a19cfb8bd00691251f8e078654fd2285
 void print_clients(t_hash_table* table) {
     printf("\nConnected Clients\n");
     // 해시 테이블의 각 버킷을 확인
@@ -144,7 +141,6 @@ void print_clients(t_hash_table* table) {
     }
     printf("\n");
 }
-*/
 
 // 해시 테이블 메모리 해제
 void free_table(t_hash_table* table) {
