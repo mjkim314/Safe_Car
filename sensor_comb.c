@@ -24,8 +24,9 @@
 #define SPI_DELAY 5
 
 //서버 IP와 port 나중에 받아서 계산하도록 바꾸기
-#define PORT 12345
-#define serverip "192.168.20.1"
+#define PORT 8888
+#define serverip "192.168.131.132"
+#define id "SAFETY"
 //여기 채워야돼!!!#######
 
 
@@ -152,7 +153,7 @@ void *send2server(){
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1){
         perror("Socket creation failed");
-        return;
+        return NULL;
     }
 
     struct sockaddr_in servAddr;
@@ -163,26 +164,30 @@ void *send2server(){
     if(connect(sock, (struct sockaddr *) &servAddr, sizeof(servAddr)) < 0) {
         perror("Connection to server failed");
         close(sock);
-        return;
+        return NULL;
     }
+    send(sock, id, 6, 0);
+    
+
     while(1) {
+        if(write(sock, "Warning_0", 9) == -1)
+        printf("전송 못했음 ㅅㄱ");
         if (totalWeight < 100) {
-            send(sock, "warning_0", 9, 0);
         }
         else if (totalWeight < 200) {
-            send(sock, "warning_1", 9, 0);
+            write(sock, "Warning_1", 9);
         }
         else {
-            send(sock, "warning_2", 9, 0);
+            write(sock, "Warning_2", 9);
             totalWeight = 0;
         }
         totalWeight -= 1;
-        sleep(0.2);
+        sleep(0.5);
     }
 
 
     close(sock);
-
+    return NULL;
 }
 
 void *touchthread(void *arg) {
@@ -191,6 +196,7 @@ void *touchthread(void *arg) {
         if (touchState == 0) {
             totalWeight += TOUCH_WEIGHT;
         }
+        printf("터치 값: %d ", touchState);
         sleep(1);
     }
 }
@@ -205,11 +211,14 @@ void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 
 
     while (1) {
         int touchState = gpioRead(TOUCH_PIN);
-        if (touchState == 0) {
-            int pressureValue = readADC(spi_fd, 0);
+        int pressureValue = 0;
+        if (touchState == 1) {
+            pressureValue = readADC(spi_fd, 0);
             if (pressureValue > PRESSURE_THRESHOLD) {
                 totalWeight += PRESSURE_WEIGHT;
             }
+            printf("압력센서: %d    ", pressureValue);
+
         }
         sleep(1);
     }
@@ -223,6 +232,7 @@ void *USthread(void *arg) {
         if (distance < DISTANCE_THRESHOLD) {
             totalWeight += DISTANCE_WEIGHT;
         }
+        printf("거리: %.2fcm\n    ", distance);
         sleep(1);
     }
 }
@@ -266,22 +276,7 @@ int main(int argc, const char* argv[]) {
     pthread_join(USsensor, NULL);
     pthread_join(sendsock, NULL);
 
-    while (1) { //1 scan per sec
-        // US sensor distance Scan
-        float distance = measureDistance();
-
-        // Touch Sensor Scan
-        int touchState = gpioRead(TOUCH_PIN);
-
-        // Pressure Sensor Scan (MCP3008 Ch.0)
-        int pressureValue = readADC(spi_fd, 0);
-
-        // Print Sensing results
-        printf("Distance: %.2f cm, Touch State: %d, Pressure: %d\n",
-               distance, touchState, pressureValue);
-
-        sleep(1); // wait 1 sec
-    }
+    
 
     close(spi_fd);
     return 0;
