@@ -36,10 +36,35 @@ int main() {
     int melody[] = {440, 494, 523, 587, 659, 698, 784}; // 도레미파솔라시
     int noteDurations[] = {500, 500, 500, 500, 500, 500, 500}; // 각 음의 지속 시간
 
-    for (int i = 0; i < 7; i++) {
-        playTone(melody[i], noteDurations[i]);
-        usleep(50000); // 음 사이의 간격
-    }
+    playTone(523,500);
+    playTone(494,300);
+    playTone(440,300);
+    playTone(494,300);
+    playTone(523,300);
+    playTone(523,300);
+    playTone(523,300);
+    playTone(494,300);
+    playTone(494,300);
+    playTone(494,300);
+    playTone(523,300);
+    playTone(659,300);
+    playTone(659,400);
+    playTone(523,300);
+    playTone(494,300);
+    playTone(440,300);
+    playTone(494,300);
+    playTone(523,300);
+    playTone(523,300);
+    playTone(523,300);
+    playTone(494,300);
+    playTone(494,300);
+    playTone(523,300);
+    playTone(494,300);
+    playTone(440,500);
+   // for (int i = 0; i < 7; i++) {
+   //     playTone(melody[i], noteDurations[i]);
+   //     usleep(50000); // 음 사이의 간격
+   // }
 
 
     printf("테스트 종료\n");
