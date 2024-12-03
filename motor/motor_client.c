@@ -45,7 +45,7 @@ void* controller_to_car_input_joy(void* arg) {
 			}
 			else if (joy_data[1] > 0 && joy_data[0] < 0){
 				goSmoothLeft(joy_data[1] + 600, joy_data[0]+600);
-			}
+			}v
 			else if (joy_data[1] == 0 && joy_data[0] > 0){
 				turnRight(joy_data[0]+600);
 			}

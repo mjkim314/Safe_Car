@@ -2,6 +2,7 @@
 #include "joystick.h"
 #include "GPIO.h"
 #include "spi.h"
+#include "motor.h"
 #include "hash_table.h"
 
 #define LED_PIN 29
@@ -168,7 +169,7 @@ void* detect_crash(void* arg) {
 	}
 	return NULL;
 
-}
+}s
 
 void* control_motor(void* arg) {
 
@@ -178,10 +179,29 @@ void* control_motor(void* arg) {
 		}	
 		
 		if (search_table(clnt_info, "CRASH")) {
-			//속도제한 코드
+			//긴급정지 코드
+			stopMotor();
 		}
 
 		//정상 작동시 코드
+		if (joy_data[1] > 0 && joy_data[0] == 0){
+			goForward(joy_data[1] + 600);
+		}
+		else if (joy_data[1] < 0 && joy_data[0] == 0){
+			goBackward(joy_data[1] + 600);
+		}
+		else if (joy_data[1] > 0 && joy_data[0] > 0){
+			goSmoothRight(joy_data[1] + 600, joy_data[0]+600);
+		}
+		else if (joy_data[1] > 0 && joy_data[0] < 0){
+			goSmoothLeft(joy_data[1] + 600, joy_data[0]+600);
+		}
+		else if (joy_data[1] == 0 && joy_data[0] > 0){
+			turnRight(joy_data[0]+600);
+		}
+		else if (joy_data[1] == 0 && joy_data[0] < 0){
+			turnLeft(joy_data[0]+600);
+		}
 
 	}
 
