@@ -35,22 +35,22 @@ void* controller_to_car_input_joy(void* arg) {
             //printf("X: %d  Y: %d  B: %d   %d\n", joy_data[0], joy_data[1], joy_data[2], bt_flag);
 			//Joystick Value -512 ~ 512 ?
 			if (joy_data[1] > 0 && joy_data[0] == 0){
-				goForward(joy_data[1] + 500);
+				goForward(joy_data[1] + 600);
 			}
 			else if (joy_data[1] < 0 && joy_data[0] == 0){
-				goBackward(joy_data[1] + 500);
+				goBackward(joy_data[1] + 600);
 			}
 			else if (joy_data[1] > 0 && joy_data[0] > 0){
-				goSmoothRight(joy_data[1] + 500, joy_data[0]+500);
+				goSmoothRight(joy_data[1] + 600, joy_data[0]+600);
 			}
 			else if (joy_data[1] > 0 && joy_data[0] < 0){
-				goSmoothLeft(joy_data[1] + 500, joy_data[0]+500);
+				goSmoothLeft(joy_data[1] + 600, joy_data[0]+600);
 			}
 			else if (joy_data[1] == 0 && joy_data[0] > 0){
-				turnRight(joy_data[0]+500);
+				turnRight(joy_data[0]+600);
 			}
 			else if (joy_data[1] == 0 && joy_data[0] < 0){
-				turnLeft(joy_data[0]+500);
+				turnLeft(joy_data[0]+600);
 			}
 
         }
