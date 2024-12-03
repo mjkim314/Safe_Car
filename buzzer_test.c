@@ -29,38 +29,16 @@ int main() {
     printf("부저 테스트 시작\n");
 
     // 다양한 음계 연주
-    playTone(440, 500);  // A4 음 (440 Hz), 500ms
-    playTone(523, 500);  // C5 음 (523 Hz), 500ms
-    playTone(659, 500);  // E5 음 (659 Hz), 500ms
-    playTone(784, 500);  // G5 음 (784 Hz), 500ms
+    //playTone(440, 500);  // A4 음 (440 Hz), 500ms
     int melody[] = {440, 494, 523, 587, 659, 698, 784}; // 도레미파솔라시
     int noteDurations[] = {500, 500, 500, 500, 500, 500, 500}; // 각 음의 지속 시간
 
-    playTone(523,500);
-    playTone(494,300);
-    playTone(440,300);
-    playTone(494,300);
-    playTone(523,300);
-    playTone(523,300);
-    playTone(523,300);
-    playTone(494,300);
-    playTone(494,300);
-    playTone(494,300);
-    playTone(523,300);
-    playTone(659,300);
-    playTone(659,400);
-    playTone(523,300);
-    playTone(494,300);
-    playTone(440,300);
-    playTone(494,300);
-    playTone(523,300);
-    playTone(523,300);
-    playTone(523,300);
-    playTone(494,300);
-    playTone(494,300);
-    playTone(523,300);
-    playTone(494,300);
-    playTone(440,500);
+    int song[] = {2637, 2793, 3135};
+    while(1){
+        for (int i=0; i<3; i++){
+            playTone(song[i], 600);
+        }
+    }
    // for (int i = 0; i < 7; i++) {
    //     playTone(melody[i], noteDurations[i]);
    //     usleep(50000); // 음 사이의 간격
