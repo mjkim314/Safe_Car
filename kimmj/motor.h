@@ -104,7 +104,7 @@ void changeDutyCycle(int x, int y){
         digitalWrite(IN2, HIGH);
         digitalWrite(IN3, HIGH);
         digitalWrite(IN4, LOW);
-        if (x == 0){//그냥 전진
+        if (x > -30 && x < 30){//그냥 전진
             PWMWriteDutyCycle(ENA, abs(y) * 20000);
 	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
         }else if(x < 0){//x값 따라
@@ -120,7 +120,7 @@ void changeDutyCycle(int x, int y){
         digitalWrite(IN2, LOW);
         digitalWrite(IN3, LOW);
         digitalWrite(IN4, HIGH);
-        if (x == 0){//그냥 직진
+        if (x > -30 && x < 30){//그냥 직진
             PWMWriteDutyCycle(ENA, abs(y) * 20000);
 	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
         }else if(x < 0){//x값 따라
