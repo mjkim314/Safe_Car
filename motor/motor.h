@@ -38,39 +38,19 @@ void stopMotor() {
     PWMWriteDutyCycle(ENB, 0);
 }
 
+void slowStop(int lastspd) {
+    int spd = abs(lastspd);
+    for(int i = spd; i > 0; i--){
+        PWMWriteDutyCycle(ENA, i);
+        PWMWriteDutyCycle(ENB, i);
+    }
+    stopMotor();
+    sleep(7);
+}
+
 void goForward(int spd) {
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
-    digitalWrite(IN3, HIGH);
-    digitalWrite(IN4, LOW);
-
-    PWMWriteDutyCycle(ENA, spd * 10000);
-    PWMWriteDutyCycle(ENB, spd * 10000);
-}
-
-void goSmoothLeft(int spd, int spd2) {
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, HIGH);
-    digitalWrite(IN3, HIGH);
-    digitalWrite(IN4, LOW);
-
-    PWMWriteDutyCycle(ENA, spd * 10000);
-    PWMWriteDutyCycle(ENB, spd2 * 8000);
-}
-
-void goSmoothRight(int spd, int spd2) {
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, HIGH);
-    digitalWrite(IN3, HIGH);
-    digitalWrite(IN4, LOW);
-
-    PWMWriteDutyCycle(ENA, spd2 * 8000);
-    PWMWriteDutyCycle(ENB, spd * 10000);
-}
-
-void goBackward(int spd) {
-    digitalWrite(IN1, HIGH);
-    digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
 
@@ -78,24 +58,48 @@ void goBackward(int spd) {
     PWMWriteDutyCycle(ENB, spd * 10000);
 }
 
-void turnLeft(int spd) {
+void goBackward() {
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, HIGH);
     digitalWrite(IN4, LOW);
 
-    PWMWriteDutyCycle(ENA, spd * 10000);
-    PWMWriteDutyCycle(ENB, spd * 10000);
+    PWMWriteDutyCycle(ENA, 800 * 10000);
+    PWMWriteDutyCycle(ENB, 400 * 10000);
 }
 
-    void turnRight(int spd) {
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, HIGH);
-    digitalWrite(IN3, LOW);
-    digitalWrite(IN4, HIGH);
-
-    PWMWriteDutyCycle(ENA, spd * 10000);
-    PWMWriteDutyCycle(ENB, spd * 10000);
+void changeDutyCycle(int x, int y){
+	if (y > 0){ //foward
+        digitalWrite(IN1, LOW);
+        digitalWrite(IN2, HIGH);
+        digitalWrite(IN3, LOW);
+        digitalWrite(IN4, HIGH);
+        if (x == 0){//그냥 전진
+            PWMWriteDutyCycle(ENA, abs(y) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+        }else if(x < 0){//x값 따라
+            PWMWriteDutyCycle(ENA, abs(abs(y)-abs(x)) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+        }else if(x > 0){//x값 따라
+            PWMWriteDutyCycle(ENA, abs(y) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(abs(y)-abs(x)) * 20000);
+        }
+    }
+    else{ //backward
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, LOW);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, LOW);
+        if (x == 0){//그냥 후진
+            PWMWriteDutyCycle(ENA, abs(y) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+        }else if(x < 0){//x값 따라
+            PWMWriteDutyCycle(ENA, abs(abs(y)-abs(x)) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+        }else if(x > 0){//x값 따라
+            PWMWriteDutyCycle(ENA, abs(y) * 20000);
+	        PWMWriteDutyCycle(ENB, abs(abs(y)-abs(x)) * 20000);
+        }
+    }
 }
-
 #endif

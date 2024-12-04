@@ -218,7 +218,18 @@ void* control_motor(void* arg) {
 		}	
 		else if (!search_table(clnt_info, "CRASH")) {
 			//CONTROL, SAFETY 클라이언트는 있는데 CRASH 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
-
+			if(joy_data[0] > 0){
+				joy_data[0] -= 200;
+			}
+			else if(joy_data[0] < 0){
+				joy_data[0] += 200;
+			}
+			else if(joy_data[1] > 0){
+				joy_data[1] -= 200;
+			}
+			else if(joy_data[1] < 0){
+				joy_data[0] += 200;
+			}
 		}
 		else {//모든 클라이언트 연결했을 때 정상구동
 			/*
@@ -229,28 +240,20 @@ void* control_motor(void* arg) {
 		*/
 
 		//정상 작동시 코드
-			if (joy_data[1] > 0 && joy_data[0] == 0) {
-				goForward(joy_data[1] + 600);
+			if(control_motor == 1){
+				for(int i = 3; i > 0; i--){
+					if(control_motor == 2){
+						slowStop(joy_data[1]);
+					}
+					changeDutyCycle(joy_data[0] * 0.75, joy_data[1] * 0.75);
+					sleep(0.2);
+				}
 			}
-			else if (joy_data[1] < 0 && joy_data[0] == 0) {
-				goBackward(joy_data[1] + 600);
+			else if(control_motor == 2){
+				slowStop(joy_data[1]);
 			}
-			else if (joy_data[1] > 0 && joy_data[0] > 0) {
-				goSmoothRight(joy_data[1] + 600, joy_data[0] + 600);
-			}
-			else if (joy_data[1] > 0 && joy_data[0] < 0) {
-				goSmoothLeft(joy_data[1] + 600, joy_data[0] + 600);
-			}
-			else if (joy_data[1] == 0 && joy_data[0] > 0) {
-				turnRight(joy_data[0] + 600);
-			}
-			else if (joy_data[1] == 0 && joy_data[0] < 0) {
-				turnLeft(joy_data[0] + 600);
-			}
-
+			changeDutyCycle(joy_data[0], joy_data[1]);
 		}
-
-		
 	}
 	return NULL;
 }

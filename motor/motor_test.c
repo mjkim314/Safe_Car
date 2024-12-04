@@ -4,7 +4,30 @@
 
 int main(int argc, char *argv[]){
 	initMotor();
-	goForward(1000);
-	sleep(5);
-	stopMotor();
+	while(1){
+		changeDutyCycle(0, 400);
+		sleep(2);
+		changeDutyCycle(150, 400);
+		sleep(2);
+		changeDutyCycle(-150, 400);
+		sleep(2);
+		stopMotor();
+		sleep(2);
+		// changeDutyCycle(150, 400);
+		// sleep(2);
+		// stopMotor();
+		// sleep(2);
+		// changeDutyCycle(-150, 400);
+		// sleep(2);
+		// stopMotor();
+		// sleep(2);
+		// goBackward();
+		// sleep(2);
+		// stopMotor();
+		// sleep(2);
+		// changeDutyCycle(-200, 400);
+		// sleep(2);
+		// stopMotor();
+		// sleep(2);
+	}
 }

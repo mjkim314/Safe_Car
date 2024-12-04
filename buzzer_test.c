@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <unistd.h> // for sleep()
 
-#define BUZZER_PIN 26  // wiringPi 기준 GPIO 18번 핀 (PWM 가능)
+#define BUZZER_PIN 29  // wiringPi 기준 GPIO 18번 핀 (PWM 가능)
 
 void playTone(int frequency, int duration) {
     int delay = 1000000 / frequency / 2; // 주기 계산
