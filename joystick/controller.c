@@ -85,7 +85,7 @@ void* controller_to_car_output(void* arg) {
                 //printf("after   -    X: %d  Y: %d  B : %d\n", joy_data[0], joy_data[1], joy_data[2]);
 
 
-                if (count < 300)
+                if (count < 300)//처음 값들은 0으로 초기화(너무 값이 튐)
                 {
                     joy_data[0] = 0;
                     joy_data[1] = 0;
@@ -123,20 +123,19 @@ void* check_clnt_lcd(void* arg) {
             ssize_t bytes_read = read(serv_sock, buffer, sizeof(buffer));
 
             if (bytes_read > 0) {
-                printf("tot : %s\n", buffer);
-                if (strcmp(prev_buffer, buffer) != 0) {
-                    char str1[18] = { 0 }; // 처음 16자를 저장할 공간 (NULL 문자 포함)
-                    char str2[18] = { 0 }; // 나머지 문자를 저장할 공간
-                    if (strlen(buffer) > 16) {
-                        strncpy(str1, buffer, 16); // 처음 16자 복사
-                        str1[16] = '\0'; // NULL 문자 추가
-                        strncpy(str2, buffer + 16, sizeof(str2) - 1); // 17번째 문자부터 복사
-                        str2[sizeof(str2) - 1] = '\0'; // NULL 문자 추가
-                    }
-                    else {
-                        strncpy(str1, buffer, sizeof(str1) - 1); // buffer 전체를 str1에 복사
-                        str1[sizeof(str1) - 1] = '\0'; // NULL 문자 추가
-                    }
+                char str1[18] = { 0 }; // 처음 16자를 저장할 공간 (NULL 문자 포함)
+                char str2[18] = { 0 }; // 나머지 문자를 저장할 공간
+                if (strlen(buffer) > 16) {
+                    strncpy(str1, buffer, 16); // 처음 16자 복사
+                    str1[16] = '\0'; // NULL 문자 추가
+                    strncpy(str2, buffer + 16, sizeof(str2) - 1); // 17번째 문자부터 복사
+                    str2[sizeof(str2) - 1] = '\0'; // NULL 문자 추가
+                }
+                else {
+                    strncpy(str1, buffer, sizeof(str1) - 1); // buffer 전체를 str1에 복사
+                    str1[sizeof(str1) - 1] = '\0'; // NULL 문자 추가
+                }
+                    
 
                     lcd_init();
                     lcd_m(LINE1);
@@ -145,7 +144,7 @@ void* check_clnt_lcd(void* arg) {
                     lcd_m(LINE2);
                     print_str(str2);
                     usleep(100000);
-                }
+                
                  
                 strcpy(prev_buffer, buffer);
 
