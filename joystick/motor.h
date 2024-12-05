@@ -38,6 +38,16 @@ void stopMotor() {
     PWMWriteDutyCycle(ENB, 0);
 }
 
+void slowStop(int lastspd) {
+    int spd = abs(lastspd);
+    for(int i = spd; i > 0; i--){
+        PWMWriteDutyCycle(ENA, i);
+        PWMWriteDutyCycle(ENB, i);
+    }
+    stopMotor();
+    sleep(7);
+}
+
 void goForward(int spd) {
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);

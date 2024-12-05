@@ -240,17 +240,20 @@ void* control_motor(void* arg) {
 		*/
 
 		//정상 작동시 코드
-			if(control_motor == 1){
+			if(motor_control == 1){
 				for(int i = 3; i > 0; i--){
-					if(control_motor == 2){
+					if(motor_control == 2){
 						slowStop(joy_data[1]);
 					}
 					changeDutyCycle(joy_data[0] * 0.75, joy_data[1] * 0.75);
 					sleep(0.2);
 				}
+				sleep(1);
+				motor_control = 0;
 			}
-			else if(control_motor == 2){
+			else if(motor_control == 2){
 				slowStop(joy_data[1]);
+				motor_control = 0;
 			}
 			changeDutyCycle(joy_data[0], joy_data[1]);
 		}
@@ -258,13 +261,14 @@ void* control_motor(void* arg) {
 	return NULL;
 }
 
+
 void* controller_to_car_input_btn(void* arg) { //조이스틱 버튼을 눌렀을 때 led 켜짐(다른 스레드에서 병렬처리)
 	
 	pinMode(LED_PIN, OUTPUT);
 
 	while (1)
 	{	
-		if (control_motor != 2) {
+		if (motor_control != 2) {
 			if (search_table(clnt_info, "CONTROL") && joy_data[2] == 0) {
 				digitalWrite(LED_PIN, 1);
 				usleep(100000);
@@ -315,10 +319,10 @@ int main(int argc, char *argv[])
 		printf("WiringPi setup failed!\n");
 		return -1;
 	}
-	if (wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) == -1) {
-		perror("SPI 초기화 실패");
-		return 1;
-	}
+//	if (wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) == -1) {
+//		perror("SPI 초기화 실패");
+//		return 1;
+//	}
 
     int car_serv_sock, car_clnt_sock;
 	struct sockaddr_in car_serv_addr;
