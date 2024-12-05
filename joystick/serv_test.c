@@ -26,7 +26,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 
     while (1) {	
 
-		if (search_table(clnt_info, "CONTROL") && count % 1 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
+		if (search_table(clnt_info, "CONTROL") && count % 10 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
 
 			int bytes_read = read(car_clnt_sock, buffer, sizeof(buffer) - 1);
 
@@ -256,6 +256,7 @@ void* control_motor(void* arg) {
 				motor_control = 0;
 			}
 			changeDutyCycle(joy_data[0], joy_data[1]);
+			printf("### %d ### %d ###", joy_data[0], joy_data[1]);
 		}
 	}
 	return NULL;
