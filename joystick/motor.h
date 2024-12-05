@@ -75,14 +75,14 @@ void changeDutyCycle(int x, int y){
         digitalWrite(IN3, LOW);
         digitalWrite(IN4, HIGH);
         if (x == 0){//그냥 전진
-            PWMWriteDutyCycle(ENA, abs(y) * 20000);
-	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+            PWMWriteDutyCycle(ENA, 400 * 20000);
+	        PWMWriteDutyCycle(ENB, 400 * 20000);
         }else if(x < 0){//x값 따라
-            PWMWriteDutyCycle(ENA, abs(abs(y)-abs(x)) * 20000);
-	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+            PWMWriteDutyCycle(ENA, 200 * 20000);
+	        PWMWriteDutyCycle(ENB, 400 * 20000);
         }else if(x > 0){//x값 따라
-            PWMWriteDutyCycle(ENA, abs(y) * 20000);
-	        PWMWriteDutyCycle(ENB, abs(abs(y)-abs(x)) * 20000);
+            PWMWriteDutyCycle(ENA, 400 * 20000);
+	        PWMWriteDutyCycle(ENB, 200 * 20000);
         }
     }
     else{ //backward
@@ -91,14 +91,14 @@ void changeDutyCycle(int x, int y){
         digitalWrite(IN3, HIGH);
         digitalWrite(IN4, LOW);
         if (x == 0){//그냥 후진
-            PWMWriteDutyCycle(ENA, abs(y) * 20000);
-	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+            PWMWriteDutyCycle(ENA, 400 * 20000);
+	        PWMWriteDutyCycle(ENB, 400 * 20000);
         }else if(x < 0){//x값 따라
-            PWMWriteDutyCycle(ENA, abs(abs(y)-abs(x)) * 20000);
-	        PWMWriteDutyCycle(ENB, abs(y) * 20000);
+            PWMWriteDutyCycle(ENA, 200 * 20000);
+	        PWMWriteDutyCycle(ENB, 400 * 20000);
         }else if(x > 0){//x값 따라
-            PWMWriteDutyCycle(ENA, abs(y) * 20000);
-	        PWMWriteDutyCycle(ENB, abs(abs(y)-abs(x)) * 20000);
+            PWMWriteDutyCycle(ENA, 400 * 20000);
+	        PWMWriteDutyCycle(ENB, 200 * 20000);
         }
     }
 }
