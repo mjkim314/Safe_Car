@@ -3,6 +3,7 @@
 
 #include "header.h"
 #include "PWM.h"
+#include "math.h"
 
 #define ENA 0 // ENA 핀 23
 #define IN1 0  // IN1 핀
@@ -48,6 +49,17 @@ void slowStop(int lastspd) {
     sleep(7);
 }
 
+void emerBrake(int y){
+   for (int i = 0; i < 3; i++){
+    PWMWriteDutyCycle(ENA, 200);
+    PWMWriteDutyCycle(ENB, 200);
+    sleep(0.5);
+    PWMWriteDutyCycle(ENA, 400);
+    PWMWriteDutyCycle(ENB, 400);
+    sleep(1);
+   }
+}
+
 void goForward(int spd) {
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
@@ -68,38 +80,46 @@ void goBackward() {
     PWMWriteDutyCycle(ENB, 400 * 10000);
 }
 
-void changeDutyCycle(int x, int y){
-	if (y > 0){ //foward
-        digitalWrite(IN1, LOW);
-        digitalWrite(IN2, HIGH);
-        digitalWrite(IN3, LOW);
-        digitalWrite(IN4, HIGH);
+void changeDutyCycle(int x, int y, int prey){
+   if(y == 0){
+      stopMotor();
+   }
+   else if (y > 0){ //foward
+        if(y > 0 && prey <= 0){
+            digitalWrite(IN1, LOW);
+            digitalWrite(IN2, HIGH);
+            digitalWrite(IN3, LOW);
+            digitalWrite(IN4, HIGH);
+        }
         if (x == 0){//그냥 전진
             PWMWriteDutyCycle(ENA, 400 * 20000);
-	        PWMWriteDutyCycle(ENB, 400 * 20000);
+            PWMWriteDutyCycle(ENB, 400 * 20000);
         }else if(x < 0){//x값 따라
             PWMWriteDutyCycle(ENA, 200 * 20000);
-	        PWMWriteDutyCycle(ENB, 400 * 20000);
+            PWMWriteDutyCycle(ENB, 400 * 20000);
         }else if(x > 0){//x값 따라
             PWMWriteDutyCycle(ENA, 400 * 20000);
-	        PWMWriteDutyCycle(ENB, 200 * 20000);
+            PWMWriteDutyCycle(ENB, 200 * 20000);
         }
     }
     else{ //backward
-        digitalWrite(IN1, HIGH);
-        digitalWrite(IN2, LOW);
-        digitalWrite(IN3, HIGH);
-        digitalWrite(IN4, LOW);
+        if(y < 0 && prey >= 0){
+            digitalWrite(IN1, HIGH);
+            digitalWrite(IN2, LOW);
+            digitalWrite(IN3, HIGH);
+            digitalWrite(IN4, LOW);
+        }
         if (x == 0){//그냥 후진
             PWMWriteDutyCycle(ENA, 400 * 20000);
-	        PWMWriteDutyCycle(ENB, 400 * 20000);
+            PWMWriteDutyCycle(ENB, 400 * 20000);
         }else if(x < 0){//x값 따라
             PWMWriteDutyCycle(ENA, 200 * 20000);
-	        PWMWriteDutyCycle(ENB, 400 * 20000);
+            PWMWriteDutyCycle(ENB, 400 * 20000);
         }else if(x > 0){//x값 따라
             PWMWriteDutyCycle(ENA, 400 * 20000);
-	        PWMWriteDutyCycle(ENB, 200 * 20000);
+            PWMWriteDutyCycle(ENB, 200 * 20000);
         }
     }
+    printf("### X:%d ### Y:%d ### PreY:%d \n", x, y, prey);
 }
 #endif

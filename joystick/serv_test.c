@@ -4,6 +4,7 @@
 #include "spi.h"
 #include "motor.h"
 #include "hash_table.h"
+//#include "lcd.h"
 
 
 #define LED_PIN 29
@@ -13,8 +14,9 @@
 int motor_control = 0;
 
 int clnt_count = 0; //클라이언트 수를 체크
-int joy_data[3]; //조이스틱 데이터(0 : x값, 1 : y값, 2 : 1이면 버튼 off, 0이면 버튼 on) -400~+400
+int joy_data[3] = {0, 0, 1}; //조이스틱 데이터(0 : x값, 1 : y값, 2 : 1이면 버튼 off, 0이면 버튼 on) -400~+400
 t_hash_table* clnt_info;
+int prey = 2;
 
 void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스레드
     int car_clnt_sock = *(int*)arg;
@@ -26,7 +28,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 
     while (1) {   
 
-      if (search_table(clnt_info, "CONTROL") && count % 1 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
+      if (search_table(clnt_info, "CONTROL") && count % 5 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
 
          int bytes_read = read(car_clnt_sock, buffer, sizeof(buffer) - 1);
 
@@ -41,7 +43,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
                joy_data[i] = ntohl(joy_data[i]);
             }
 
-            printf("X: %d  Y: %d  B: %d\n", joy_data[0], joy_data[1], joy_data[2]);
+            //printf("X: %d  Y: %d  B: %d\n", joy_data[0], joy_data[1], joy_data[2]);
          }
          else 
          {
@@ -67,45 +69,45 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
    return NULL;
 }
 
-// void* car_to_controller_lcd(void* arg) {
-//    int car_clnt_sock = *(int*)arg;
-//    char buffer[36];
-//    char prev_buffer[36];
-//    struct timespec delay;
-//    delay.tv_sec = 0;
-//    delay.tv_nsec = 10000000;
-//    int count = 0;
+void* car_to_controller_lcd(void* arg) {
+   int car_clnt_sock = *(int*)arg;
+   char buffer[36];
+   char prev_buffer[36];
+   struct timespec delay;
+   delay.tv_sec = 0;
+   delay.tv_nsec = 10000000;
+   int count = 0;
 
-//    while (1) {
-//       if (search_table(clnt_info, "CONTROL") && count % 150 == 0) {
-//          memset(buffer, 0, sizeof(buffer));
-//          snprintf(buffer, sizeof(buffer), "CONTROL");
+   while (1) {
+      if (search_table(clnt_info, "CONTROL") && count % 150 == 0) {
+         memset(buffer, 0, sizeof(buffer));
+         snprintf(buffer, sizeof(buffer), "CONTROL");
 
-//          if (search_table(clnt_info, "SAFETY")) {
-//             strcat(buffer, ", SAFETY");
-//          }
-//          if (search_table(clnt_info, "CRASH")) {
-//             strcat(buffer, ", CRASH");
+         if (search_table(clnt_info, "SAFETY")) {
+            strcat(buffer, ", SAFETY");
+         }
+         if (search_table(clnt_info, "CRASH")) {
+            strcat(buffer, ", CRASH");
 
-//          }
+         }
 
-//          if (strcmp(prev_buffer, buffer) != 0) {
-//             write(car_clnt_sock, buffer, sizeof(buffer));
+         if (strcmp(prev_buffer, buffer) != 0) {
+            write(car_clnt_sock, buffer, sizeof(buffer));
 
-//          }
-//       }
-//       else if (!search_table(clnt_info, "CONTROL")) {
-//          pthread_exit(NULL);
-//       }
+         }
+      }
+      else if (!search_table(clnt_info, "CONTROL")) {
+         pthread_exit(NULL);
+      }
       
-//       strcpy(prev_buffer, buffer);
-//       count++;
-//       nanosleep(&delay, NULL);
+      strcpy(prev_buffer, buffer);
+      count++;
+      nanosleep(&delay, NULL);
 
          
-//    }
+   }
 
-// }
+}
 
 void* detect_safety(void* arg) { 
    char buffer[256];
@@ -209,63 +211,60 @@ void* detect_crash(void* arg) {
 
 }
 */
+
 void* control_motor(void* arg) {
 
-	while (1) {
-		// if (!search_table(clnt_info, "CONTROL") || !search_table(clnt_info, "SAFETY")) {
-		// 	//모터 구동 필요 없음, 코드 없어도 됨
-		// }	
-		// else if (!search_table(clnt_info, "CRASH")) {
-		// 	//CONTROL, SAFETY 클라이언트는 있는데 CRASH 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
-		// 	if(joy_data[0] > 0){
-		// 		joy_data[0] -= 200;
-		// 	}
-		// 	else if(joy_data[0] < 0){
-		// 		joy_data[0] += 200;
-		// 	}
-		// 	else if(joy_data[1] > 0){
-		// 		joy_data[1] -= 200;
-		// 	}
-		// 	else if(joy_data[1] < 0){
-		// 		joy_data[0] += 200;
-		// 	}
-		// }
-		//else {//모든 클라이언트 연결했을 때 정상구동
-			/*
-		control_motor = 0은 평시 상황임
-		control_motor = 1 일때, 0.2초 정도로 속도를 75%정도로 줄이기 (3번 반복)
-		control_motor = 2 일때, 속도를 0까지 천천히 줄이기, 값은 마음대로
-		(이건 control_motor 1보다 우선순위가 높음, control=1일 때 2로 바뀌면, 속도 75%로 줄이는 건 무시된다는 뜻임)
-		*/
+   while (1) {
+      //changeDutyCycle(joy_data[0], joy_data[1], prey);
+      //prey = joy_data[1];
+      if (!search_table(clnt_info, "CONTROL") || !search_table(clnt_info, "SAFETY")) {
+         //모터 구동 필요 없음, 코드 없어도 됨
+         continue;
+      }   
+      else if (!search_table(clnt_info, "CRASH")) {
+         //CONTROL, SAFETY 클라이언트는 있는데 CRASH 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
+         if(joy_data[0] > 0){
+            joy_data[0] -= 200;
+         }
+         else if(joy_data[0] < 0){
+            joy_data[0] += 200;
+         }
+         else if(joy_data[1] > 0){
+            joy_data[1] -= 200;
+         }
+         else if(joy_data[1] < 0){
+            joy_data[0] += 200;
+         }
+      }
+      //모든 클라이언트 연결했을 때 정상구동
+         /*
+      control_motor = 0은 평시 상황임
+      control_motor = 1 일때, 0.2초 정도로 속도를 75%정도로 줄이기 (3번 반복)
+      control_motor = 2 일때, 속도를 0까지 천천히 줄이기, 값은 마음대로
+      (이건 control_motor 1보다 우선순위가 높음, control=1일 때 2로 바뀌면, 속도 75%로 줄이는 건 무시된다는 뜻임)
+      */
 
-		//정상 작동시 코드
-			if(motor_control == 1){
-				for(int i = 3; i > 0; i--){
-					if(motor_control == 2){
-						slowStop(joy_data[1]);
-					}
-					changeDutyCycle(joy_data[0] * 0.75, joy_data[1] * 0.75);
-					sleep(0.2);
-				}
-				sleep(1);
-				motor_control = 0;
-			}
-			else if(motor_control == 2){
-				slowStop(joy_data[1]);
-				motor_control = 0;
-			}
-			// for(int i = 300; i < 400; i++){
-			// 	changeDutyCycle(0, i);
-			// 	sleep(1);
-			// 	printf("%d ", i);
-			// }
-			// stopMotor();
-			// sleep(3);
-			changeDutyCycle(joy_data[0], joy_data[1]);
-			//printf("### %d ### %d ###\n", joy_data[0], joy_data[1]);
-		//}
-	}
-	return NULL;
+      //정상 작동시 코드
+         if(motor_control == 1){
+            for(int i = 3; i > 0; i--){
+               if(motor_control == 2){
+                  slowStop(joy_data[1]);
+               }
+               emerBrake(joy_data[1]);
+            }
+            sleep(1);
+            motor_control = 0;
+         }
+         else if(motor_control == 2){
+            slowStop(joy_data[1]);
+            motor_control = 0;
+         }
+         changeDutyCycle(joy_data[0], joy_data[1], prey);
+         printf("Thread ### X:%d ### Y:%d ###\n",joy_data[0], joy_data[1] );
+         prey = joy_data[1];
+         sleep(1);
+   }
+   return NULL;
 }
 
 
@@ -315,7 +314,7 @@ void* controller_to_car_input_buzz(void* arg) { //버튼 눌렀을 때 부저 �
 
 int main(int argc, char *argv[])
 {
-	initMotor();
+
     if (argc != 1)
     {
         printf("Usage : %s\n", argv[0]);
@@ -326,7 +325,11 @@ int main(int argc, char *argv[])
       printf("WiringPi setup failed!\n");
       return -1;
    }
-   
+//   if (wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) == -1) {
+//      perror("SPI 초기화 실패");
+//      return 1;
+//   }
+
     int car_serv_sock, car_clnt_sock;
    struct sockaddr_in car_serv_addr;
    struct sockaddr_in car_clnt_addr;
@@ -406,10 +409,10 @@ int main(int argc, char *argv[])
             pthread_t controller_to_car_input_joy_thread, car_to_controller_lcd_thread;
 
             pthread_create(&controller_to_car_input_joy_thread, NULL, controller_to_car_input_joy, (void*)&car_clnt_sock);
-            //pthread_create(&car_to_controller_lcd_thread, NULL, car_to_controller_lcd, (void*)&car_clnt_sock);
+            pthread_create(&car_to_controller_lcd_thread, NULL, car_to_controller_lcd, (void*)&car_clnt_sock);
 
             pthread_detach(controller_to_car_input_joy_thread);
-            //pthread_detach(car_to_controller_lcd_thread);
+            pthread_detach(car_to_controller_lcd_thread);
 
             clnt_count++;
             print_clients(clnt_info);
