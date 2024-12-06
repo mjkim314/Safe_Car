@@ -120,6 +120,6 @@ void changeDutyCycle(int x, int y, int prey){
 	        PWMWriteDutyCycle(ENB, 200 * 20000);
         }
     }
-    printf("### X:%d ### Y:%d ### PreY:%d ###\n", x, y, prey);
+    printf("### X:%d ### Y:%d ### PreY:%d \n", x, y, prey);
 }
 #endif

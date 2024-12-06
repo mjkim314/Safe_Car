@@ -260,7 +260,7 @@ void* control_motor(void* arg) {
 				motor_control = 0;
 			}
 			changeDutyCycle(joy_data[0], joy_data[1], prey);
-			printf("Thread ### %d ### %d ###\n",joy_data[0], joy_data[1] );
+			printf("Thread ### X:%d ### Y:%d ###\n",joy_data[0], joy_data[1] );
 			prey = joy_data[1];
 			sleep(1);
 	}
