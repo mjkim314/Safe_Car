@@ -6,11 +6,13 @@ int main(int argc, char *argv[]){
 	initMotor();
 	while(1){
 		changeDutyCycle(0, 400);
-		sleep(2);
-		changeDutyCycle(150, 400);
-		sleep(2);
+		sleep(1);
+		changeDutyCycle(150, -400);
+		sleep(1);
 		changeDutyCycle(-150, 400);
-		sleep(2);
+		sleep(1);
+		changeDutyCycle(150, -400);
+		sleep(1);
 		stopMotor();
 		sleep(2);
 		// changeDutyCycle(150, 400);

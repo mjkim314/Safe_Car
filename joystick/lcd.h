@@ -27,6 +27,7 @@
 #define BUTTON_PIN 23
 
 int fd;
+/*
 void lcd_init(void);
 void lcd_byte(int bits, int mode);
 void lcd_toggle_enable(int bits);
@@ -36,6 +37,7 @@ void cursor_to_home(void);
 void print_str(const char *s);
 void get_set(void);
 int setup_touch_sensor(void);
+*/
 
 int setup_touch_sensor(void)
 {

@@ -60,7 +60,6 @@ int readadc(int fd, uint8_t channel) {
     perror("IO Error");
     abort();
   }
-  printf("%02x  %02x %02x \n", tx[0], tx[1], tx[2]);
   return ((rx[1] << 8) & 0x300) | (rx[2] & 0xFF);
 }
 

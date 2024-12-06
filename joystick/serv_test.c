@@ -4,6 +4,7 @@
 #include "spi.h"
 #include "motor.h"
 #include "hash_table.h"
+//#include "lcd.h"
 
 
 #define LED_PIN 29
@@ -13,8 +14,9 @@
 int motor_control = 0;
 
 int clnt_count = 0; //클라이언트 수를 체크
-int joy_data[3]; //조이스틱 데이터(0 : x값, 1 : y값, 2 : 1이면 버튼 off, 0이면 버튼 on) -400~+400
+int joy_data[3] = {0, 0, 1}; //조이스틱 데이터(0 : x값, 1 : y값, 2 : 1이면 버튼 off, 0이면 버튼 on) -400~+400
 t_hash_table* clnt_info;
+int prey = 2;
 
 void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스레드
     int car_clnt_sock = *(int*)arg;
@@ -26,7 +28,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 
     while (1) {	
 
-		if (search_table(clnt_info, "CONTROL") && count % 1 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
+		if (search_table(clnt_info, "CONTROL") && count % 5 == 0) { //0.1초마다 조이스틱 값 읽기(연결 체크)
 
 			int bytes_read = read(car_clnt_sock, buffer, sizeof(buffer) - 1);
 
@@ -213,8 +215,11 @@ void* detect_crash(void* arg) {
 void* control_motor(void* arg) {
 
 	while (1) {
+		//changeDutyCycle(joy_data[0], joy_data[1], prey);
+		//prey = joy_data[1];
 		if (!search_table(clnt_info, "CONTROL") || !search_table(clnt_info, "SAFETY")) {
 			//모터 구동 필요 없음, 코드 없어도 됨
+			continue;
 		}	
 		else if (!search_table(clnt_info, "CRASH")) {
 			//CONTROL, SAFETY 클라이언트는 있는데 CRASH 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
@@ -231,7 +236,7 @@ void* control_motor(void* arg) {
 				joy_data[0] += 200;
 			}
 		}
-		else {//모든 클라이언트 연결했을 때 정상구동
+		//모든 클라이언트 연결했을 때 정상구동
 			/*
 		control_motor = 0은 평시 상황임
 		control_motor = 1 일때, 0.2초 정도로 속도를 75%정도로 줄이기 (3번 반복)
@@ -245,8 +250,7 @@ void* control_motor(void* arg) {
 					if(motor_control == 2){
 						slowStop(joy_data[1]);
 					}
-					changeDutyCycle(joy_data[0] * 0.75, joy_data[1] * 0.75);
-					sleep(0.2);
+					emerBrake(joy_data[1]);
 				}
 				sleep(1);
 				motor_control = 0;
@@ -255,8 +259,10 @@ void* control_motor(void* arg) {
 				slowStop(joy_data[1]);
 				motor_control = 0;
 			}
-			changeDutyCycle(joy_data[0], joy_data[1]);
-		}
+			changeDutyCycle(joy_data[0], joy_data[1], prey);
+			printf("Thread ### %d ### %d ###\n",joy_data[0], joy_data[1] );
+			prey = joy_data[1];
+			sleep(1);
 	}
 	return NULL;
 }

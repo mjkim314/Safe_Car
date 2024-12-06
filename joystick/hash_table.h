@@ -2,7 +2,7 @@
 #define HASH_TABLE_H
 
 #include "header.h"
-#include "lcd.h"
+//#include "lcd.h"
 
 #define TABLE_SIZE 3 // 해시 테이블 크기 (소수 사용 권장)
 

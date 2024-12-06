@@ -40,6 +40,8 @@ int* readController(int fd) {
         }
         ch[i] = value;
     }
+    		printf("X : %d  Y : %d  B : %d \n", ch[1], ch[2], ch[0]);
+
 
     return ch;
 }
