@@ -24,8 +24,8 @@
 #define SPI_DELAY 5
 
 //서버 IP와 port 나중에 받아서 계산하도록 바꾸기
-#define PORT 8888
-#define serverip "192.168.131.132"
+#define PORT 12345
+#define serverip "192.168.131.133"
 #define id "SAFETY"
 //여기 채워야돼!!!#######
 
