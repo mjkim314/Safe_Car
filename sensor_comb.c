@@ -9,12 +9,15 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include "GPIO.h"
 
 // GPIO setting
 #define GPIO_PATH "/sys/class/gpio"
 #define TRIG_PIN 23  // US sensor Trigger Pin
 #define ECHO_PIN 24  // US sensor Echo Pin
 #define TOUCH_PIN 17 // Touch sensor Pin
+#define IN 0
+#define OUT 1
 
 // SPI setting (Pressure Sensor & ADC setting)
 #define SPI_DEVICE "/dev/spidev0.0"
@@ -25,7 +28,7 @@
 
 //서버 IP와 port 나중에 받아서 계산하도록 바꾸기
 #define PORT 12345
-#define serverip "192.168.131.133"
+#define serverip "192.168.131.15"
 #define id "SAFETY"
 //여기 채워야돼!!!#######
 
@@ -39,15 +42,12 @@
 #define WEIGHT_THRESHOLD 50       // Total weight threshold for triggering the server
 #define WEIGHT_LOSS_RATE 1        // weight loss per time
 
+#define SENSING_TIME 500000         //0.5s
 int totalWeight = 0; //센서가 sos를 보낼 총 가중치값
 
 
-void error_handling(char *message) {
-  fputs(message, stderr);
-  fputc('\n', stderr);
-  exit(1);
-}
 
+/* 해더 사용으로 내부에서 구현 필요 X, 주석처리
 // GPIO Export (GPIO activation set)
 int gpioExport(int pin) {
     char path[50];
@@ -102,7 +102,7 @@ int gpioWrite(int pin, int value) {
     dprintf(fd, "%d", value);
     close(fd);
     return 0;
-}
+} */
 
 // MCP3008 Read pressure sensor Value
 int readADC(int fd, u_int8_t channel) {
@@ -129,16 +129,16 @@ float measureDistance() {
     struct timeval start, end;
     long duration;
 
-    gpioWrite(TRIG_PIN, 0);
+    GPIOWrite(TRIG_PIN, 0);
     usleep(2);
-    gpioWrite(TRIG_PIN, 1);
+    GPIOWrite(TRIG_PIN, 1);
     usleep(10);
-    gpioWrite(TRIG_PIN, 0);
+    GPIOWrite(TRIG_PIN, 0);
 
-    while (gpioRead(ECHO_PIN) == 0);
+    while (GPIORead(ECHO_PIN) == 0);
     gettimeofday(&start, NULL);
 
-    while (gpioRead(ECHO_PIN) == 1);
+    while (GPIORead(ECHO_PIN) == 1);
     gettimeofday(&end, NULL);
 
     duration = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
@@ -166,23 +166,23 @@ void *send2server(){
         close(sock);
         return NULL;
     }
-    send(sock, id, 6, 0);
-    
-
-    while(1) {
-        if(write(sock, "Warning_0", 9) == -1)
-        printf("전송 못했음 ㅅㄱ");
+    send(sock, id, sizeof(id), 0);
+    sleep(1);
+    char msg[2] = {0};
+    while(1) {        
         if (totalWeight < 100) {
+            *msg= 0;
         }
         else if (totalWeight < 200) {
-            write(sock, "Warning_1", 9);
+            *msg = 1;
         }
         else {
-            write(sock, "Warning_2", 9);
+            *msg = 2;
             totalWeight = 0;
         }
-        totalWeight -= 1;
-        sleep(0.5);
+        msg[1] = '\0';
+        write(sock, msg, 0);
+        sleep(1);
     }
 
 
@@ -192,12 +192,15 @@ void *send2server(){
 
 void *touchthread(void *arg) {
     while (1) {
-        int touchState = gpioRead(TOUCH_PIN);
+        int touchState = GPIORead(TOUCH_PIN);
         if (touchState == 0) {
             totalWeight += TOUCH_WEIGHT;
         }
-        printf("터치 값: %d ", touchState);
-        sleep(1);
+        printf("Totalweight: %d\n", totalWeight);
+
+        printf("터치 값: %d    ", touchState);
+        totalWeight -= WEIGHT_LOSS_RATE;
+        usleep(SENSING_TIME);
     }
 }
 
@@ -210,7 +213,7 @@ void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 
     }
 
     while (1) {
-        int touchState = gpioRead(TOUCH_PIN);
+        int touchState = GPIORead(TOUCH_PIN);
         int pressureValue = 0;
         if (touchState == 1) {
             pressureValue = readADC(spi_fd, 0);
@@ -220,7 +223,7 @@ void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 
             printf("압력센서: %d    ", pressureValue);
 
         }
-        sleep(1);
+        usleep(SENSING_TIME);
     }
     close(spi_fd);
 }
@@ -229,24 +232,26 @@ void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 
 void *USthread(void *arg) {
     while (1) {
         float distance = measureDistance();
+        if (distance > 300)
+            distance = 0;
         if (distance < DISTANCE_THRESHOLD) {
             totalWeight += DISTANCE_WEIGHT;
         }
-        printf("거리: %.2fcm\n    ", distance);
-        sleep(1);
+        printf("거리: %.2fcm    ", distance);
+        usleep(SENSING_TIME);
     }
 }
 
 
 int main(int argc, const char* argv[]) {
     // GPIO reset & acitvate
-    gpioExport(TRIG_PIN);
-    gpioExport(ECHO_PIN);
-    gpioExport(TOUCH_PIN);
+    GPIOExport(TRIG_PIN);
+    GPIOExport(ECHO_PIN);
+    GPIOExport(TOUCH_PIN);
 
-    gpioSetDirection(TRIG_PIN, "out");
-    gpioSetDirection(ECHO_PIN, "in");
-    gpioSetDirection(TOUCH_PIN, "in");
+    GPIODirection(TRIG_PIN, OUT);
+    GPIODirection(ECHO_PIN, IN);
+    GPIODirection(TOUCH_PIN, IN);
 
     // Set SPI
     int spi_fd = open(SPI_DEVICE, O_RDWR);
