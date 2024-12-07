@@ -55,7 +55,7 @@ void slowStop(int lastspd) {
 void emerBrake(int y){
     PWMWriteDutyCycle(ENA, 0);
     PWMWriteDutyCycle(ENB, 0);
-    sleep(0.3);
+    sleep(1);
 
 }
 
@@ -104,7 +104,7 @@ void changeDutyCycle(int x, int y) {
     if (y == 0) {
         PWMWriteDutyCycle(ENA, 0);
         PWMWriteDutyCycle(ENB, 0);
-        printf("Y == 0, no movement\n");
+        //printf("Y == 0, no movement\n");
         return;
     }
 
@@ -142,7 +142,7 @@ void changeDutyCycle(int x, int y) {
     PWMWriteDutyCycle(ENB, abs(dutyB));
 
     // 디버그 출력
-    printf("X:%d ### Y:%d ### DutyA:%d ### DutyB:%d ### Magnitude:%.2f\n", x, y, dutyA, dutyB, magnitude);
+    //printf("X:%d ### Y:%d ### DutyA:%d ### DutyB:%d ### Magnitude:%.2f\n", x, y, dutyA, dutyB, magnitude);
 }
 
 
