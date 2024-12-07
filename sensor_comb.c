@@ -27,24 +27,24 @@
 #define SPI_DELAY 5
 
 //서버 IP와 port 나중에 받아서 계산하도록 바꾸기
-#define PORT 12345
-#define serverip "192.168.131.15"
-#define id "SAFETY"
 //여기 채워야돼!!!#######
+#define PORT 12345
+#define serverip "192.168.131.217"
+#define id "SAFETY"
 
 
-//센서 임계값 가중치
+//센서 임계값 가중치  이거 조절해서 민감도 설정
+//total weight = distance weight + (touch weight + pressure weight) - weight loss
 #define DISTANCE_THRESHOLD 15.0f  // Distance threshold in cm
-#define PRESSURE_THRESHOLD 512    // Pressure sensor threshold (ADC value)
-#define TOUCH_WEIGHT 10           // Weight for touch sensor when 0 (no hands on)
-#define DISTANCE_WEIGHT 5         // Weight for distance sensor
-#define PRESSURE_WEIGHT 15        // Weight for pressure sensor
+#define PRESSURE_THRESHOLD 150    // Pressure sensor threshold (ADC value)
+#define DISTANCE_WEIGHT 10         // Weight for distance sensor
+#define TOUCH_WEIGHT 10          // Weight for touch sensor when 0 (no hands on)
+#define PRESSURE_WEIGHT 5      // Weight for pressure sensor
 #define WEIGHT_THRESHOLD 50       // Total weight threshold for triggering the server
-#define WEIGHT_LOSS_RATE 1        // weight loss per time
+#define WEIGHT_LOSS_RATE 15        // weight loss per time
 
-#define SENSING_TIME 500000         //0.5s
+#define SENSING_TIME 1000000         //1s == 1000000
 int totalWeight = 0; //센서가 sos를 보낼 총 가중치값
-
 
 
 /* 해더 사용으로 내부에서 구현 필요 X, 주석처리
@@ -168,20 +168,34 @@ void *send2server(){
     }
     send(sock, id, sizeof(id), 0);
     sleep(1);
-    char msg[2] = {0};
-    while(1) {        
-        if (totalWeight < 100) {
-            *msg= 0;
+    int warning = 0, cnt = 0; // cnt = 1을 몇번 보내느냐
+    char msg[3];
+    while(1) {
+        if (cnt > 4) { //연속적으로 1이 갈 경우
+            strcpy(msg, "2");
+            totalWeight = WEIGHT_THRESHOLD -10;
+            cnt = 0;
+            warning = 1;
+        } 
+        else if (totalWeight < WEIGHT_THRESHOLD || warning == 1) { //warning 2 보내고 난 후 초기화
+            strcpy(msg, "0");
+            cnt = 0;
+            warning = 0;
+        }    
+        
+        else if (totalWeight >= WEIGHT_THRESHOLD) {
+            strcpy(msg, "1");    
+            cnt += 1;   
+        }   
+        else if(totalWeight < WEIGHT_THRESHOLD || warning != 1 ) { //평시
+            strcpy(msg, "0");
+            cnt = 0;
         }
-        else if (totalWeight < 200) {
-            *msg = 1;
-        }
-        else {
-            *msg = 2;
-            totalWeight = 0;
-        }
-        msg[1] = '\0';
-        write(sock, msg, 0);
+        if(totalWeight < 0) totalWeight = 0;
+
+
+        printf("%s  ", msg);
+        write(sock, msg, sizeof(msg));
         sleep(1);
     }
 
@@ -218,7 +232,7 @@ void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 
         if (touchState == 1) {
             pressureValue = readADC(spi_fd, 0);
             if (pressureValue > PRESSURE_THRESHOLD) {
-                totalWeight += PRESSURE_WEIGHT;
+                totalWeight += PRESSURE_WEIGHT + TOUCH_WEIGHT;
             }
             printf("압력센서: %d    ", pressureValue);
 
