@@ -9,10 +9,11 @@
 
 
 #define LED_PIN 29
-//#define BZ_PIN 21
+#define BUZZER_PIN 28
 #define PORT 12345
 #define CLNT_SIZE 3
 int motor_control = 0;
+int crash_detect_ou = 0;
 
 int clnt_count = 0; //클라이언트 수를 체크
 int joy_data[3] = { 0, 0, 1 }; //조이스틱 데이터(0 : x값, 1 : y값, 2 : 1이면 버튼 off, 0이면 버튼 on) -400~+400
@@ -177,104 +178,92 @@ void* detect_crash(void* arg) {
    int count = 0;
 
    while (1) {
-       if (search_table(clnt_info, "CRASH") && count % 10 == 0) { // 0.5초마다 값 읽기
+       if (search_table(clnt_info, "CRASH") && count % 25 == 0) { // 0.5초마다 값 읽기
            bytes_read = read(car_clnt_sock, buffer, sizeof(buffer) - 1);
 
            if (bytes_read > 0) {
                
-               if (strncmp(buffer, "F", sizeof("F")) == 0) {
-
-
-               }
-               else if (strncmp(buffer, "B", sizeof("B")) == 0) {
-                   
-
-               }
+                if (strncmp(buffer, "F", sizeof("F")) == 0) {
+                    crash_detect_ou = 1;
+                    usleep(20000);
+                    crash_detect_ou = 0;
+                }
+                else if (strncmp(buffer, "B", sizeof("B")) == 0) {
+                    crash_detect_ou = 1;
+                    usleep(20000);
+                    crash_detect_ou = 0;
+                }
+                else{
+                    continue;
+                }
 
            }
            else
            {
-               close(car_clnt_sock);
-               remove_from_table(clnt_info, "CRASH");
-               print_clients(clnt_info);
-               clnt_count--;
-
-               pthread_exit(NULL);
-
+                close(car_clnt_sock);
+                remove_from_table(clnt_info, "CRASH");
+                print_clients(clnt_info);
+                clnt_count--;
+                pthread_exit(NULL);
            }
 
        }
-
-
       memset(buffer, 0, sizeof(buffer));
       count++;
       nanosleep(&delay, NULL);
    }
    return NULL;
-
 }
 
 
 void* control_motor(void* arg) {
-
     while (1) {
-       /*
-        if (!search_table(clnt_info, "CONTROL") || !search_table(clnt_info, "SAFETY")) {
+        /*if (!search_table(clnt_info, "CONTROL") || !search_table(clnt_info, "SAFETY")) {
             //모터 구동 필요 없음, 코드 없어도 됨
             continue;
         }
-        */
-        /*
         else if (!search_table(clnt_info, "CRASH")) {
             //CONTROL, SAFETY 클라이언트는 있는데 CRASH 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
-            if (joy_data[0] > 0 ) {
-                joy_data[0] -= 200;
-            }
-            else if (joy_data[0] < 0) {
-                joy_data[0] += 200;
-            }
-            else if (joy_data[1] > 0) {
-                joy_data[1] -= 200;
-            }
-            else if (joy_data[1] < 0) {
-                joy_data[0] += 200;
-            }
-        }
-       
-*/
+            joy_data[0] /= 2;
+            joy_data[1] /= 2;
+        }*/
         //정상 작동시 코드
-        if (motor_control == 1) {
-           /*
-            for (int i = 3; i > 0; i--) {
-                if (motor_control == 2) {
-                    slowStop(joy_data[1]);
-                }*/
-                emerBrake(joy_data[1]);
-            //}
-            sleep(1);
+        if (motor_control == 1 || crash_detect_ou == 1) {
+            printf("[*]Emergency Brake Activate!\n");
+            emerBrake(joy_data[1]);
             motor_control = 0;
         }
         else if (motor_control == 2) {
+            printf("[*]Slow Stop Activate!\n");
             slowStop(joy_data[1]);
             motor_control = 0;
         }
-        else{
-           changeDutyCycle(joy_data[0], joy_data[1]);
-
-        usleep(10000);
-           }
-                   printf("%d\n", motor_control);
+        else if(motor_control == 0){
+            changeDutyCycle(joy_data[0], joy_data[1]);
+            usleep(10000);
+        }
 
         
     }
     return NULL;
 }
 
+void playTone(int frequency, int duration) {//Buzzer 재생 함수
+    int delay = 1000000 / frequency / 2; // 주기 계산
+    int cycles = frequency * duration / 1000; // 주어진 시간 동안 사이클 수 계산
+    for (int i = 0; i < cycles; i++) {
+        digitalWrite(BUZZER_PIN, HIGH); // 부저 ON
+        usleep(delay);                 // 고음 유지 시간
+        digitalWrite(BUZZER_PIN, LOW);  // 부저 OFF
+        usleep(delay);                 // 저음 유지 시간
+    }
+}
 
 void* controller_to_car_input_btn(void* arg) { //조이스틱 버튼을 눌렀을 때 led 켜짐(다른 스레드에서 병렬처리)
 
     pinMode(LED_PIN, OUTPUT);
-
+    pinMode(BUZZER_PIN, OUTPUT);
+    
     while (1)
     {
         if (motor_control != 2) {
@@ -285,35 +274,21 @@ void* controller_to_car_input_btn(void* arg) { //조이스틱 버튼을 눌렀�
             }
         }
         else { //위험 감지 파이가 위험신호를 보낼 때(control_motor==2일 때)
-            digitalWrite(LED_PIN, 1);
-            usleep(1000);
-            digitalWrite(LED_PIN, 0);
+            int song[] = {523, 587, 659};//{1318, 1396, 1567};
+            for(int j=0; j<3; j++){
+                digitalWrite(LED_PIN, 1);
+                for (int i=0; i<3; i++){
+                    playTone(song[i], 300);
+                }
+                digitalWrite(LED_PIN, 0);
+                usleep(100000);
+            }
+            digitalWrite(BUZZER_PIN, LOW);
         }
-
-
     }
     return NULL;
 
 }
-/*
-void* controller_to_car_input_buzz(void* arg) { //버튼 눌렀을 때 부저 울림(나중에 피에조 부저로 대체)
-
-   pinMode(BZ_PIN, OUTPUT);
-
-   while (1)
-   {
-      if (bt_flag) {
-         digitalWrite(BZ_PIN, 1);
-         usleep(100000);
-         digitalWrite(BZ_PIN, 0);
-         bt_flag = 0;
-      }
-
-   }
-   return NULL;
-
-}
-*/
 
 int main(int argc, char* argv[])
 {
@@ -429,6 +404,7 @@ int main(int argc, char* argv[])
             }
             else if (strncmp(buffer, "CRASH", strlen("CRASH")) == 0)
             {
+                add_to_table(clnt_info, "CRASH", car_clnt_sock);
                 pthread_t detect_crash_thread;
                 pthread_create(&detect_crash_thread, NULL, detect_crash, (void*)&car_clnt_sock);
                 pthread_detach(detect_crash_thread); 
