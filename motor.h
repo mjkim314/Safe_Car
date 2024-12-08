@@ -52,97 +52,49 @@ void slowStop(int lastspd) {
     sleep(3);
 }
 
-void emerBrake(int y){
-    PWMWriteDutyCycle(ENA, 0);
-    PWMWriteDutyCycle(ENB, 0);
-    sleep(1);
-
-}
-
-// 내적 계산 함수
-float dotProduct(int x1, int y1, int x2, int y2) {
-    return (x1 * x2 + y1 * y2);
-}
-
-// 벡터 크기 계산 함수
-float magnitude(int x, int y) {
-    return sqrt(x * x + y * y);
-}
-
-float calculateAngle(int x, int y) {
-    int forwardX = 0;  // 직진 방향의 x 값 (기준 벡터)
-    int forwardY = 1;  // 직진 방향의 y 값 (기준 벡터)
-
-    float dot = dotProduct(x, y, forwardX, forwardY);
-    float mag1 = magnitude(x, y);  // 입력 벡터 (x, y)의 크기
-    float mag2 = magnitude(forwardX, forwardY);  // 기준 벡터의 크기 (1)
-
-    // 코사인 법칙을 이용해 각도 계산
-    float cosTheta = dot / (mag1 * mag2);
-    if (cosTheta > 1.0) cosTheta = 1.0;  // 범위 초과 방지
-    if (cosTheta < -1.0) cosTheta = -1.0;  // 범위 초과 방지
-    
-    return acos(cosTheta);  // 라디안 값 반환
-}
-
-
 void changeDutyCycle(int x, int y) {
     // 방향 설정 (전진/후진)
     if (y < 0) {  // backward
         digitalWrite(IN1, LOW);
         digitalWrite(IN2, HIGH);
-        digitalWrite(IN3, HIGH);
-        digitalWrite(IN4, LOW);
+        digitalWrite(IN3, LOW);
+        digitalWrite(IN4, HIGH);
     } else {  // forward
         digitalWrite(IN1, HIGH);
         digitalWrite(IN2, LOW);
-        digitalWrite(IN3, LOW);
-        digitalWrite(IN4, HIGH);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, LOW);
     }
 
     // y == 0일 때 듀티 사이클 0으로 설정
-    if (y == 0) {
-        PWMWriteDutyCycle(ENA, 0);
-        PWMWriteDutyCycle(ENB, 0);
+    if ( y > -100 && y < 100 ) {
+        stopMotor();
         //printf("Y == 0, no movement\n");
         return;
     }
-
-    // x, y 값에 따른 정규화 및 벡터 크기 계산
-    float normX = (float)x / MAX_INPUT;  // x: [-1, 1]
-    float normY = (float)y / MAX_INPUT;  // y: [-1, 1]
-    float magnitude = sqrt(normX * normX + normY * normY);  // 벡터 크기
-
-    int dutyA, dutyB;
-
+    int dutyA = 0, dutyB = 0;
     // 기본 속도는 y에 비례
-    int baseDuty = abs(y) * 20000;  
+    int baseDuty = abs(y) * 22000;  
 
-    if (magnitude < 0.1) {  // 움직임이 거의 없는 경우
-        dutyA = 0;
-        dutyB = 0;
-    } else {
-        // x > 0 -> 우회전, x < 0 -> 좌회전
-        if (x > 0) {  // 우회전
-            // 우회전 정도에 따라 속도 세분화
-            dutyA = baseDuty * (1 - fabs(normX) * 0.5);  // 왼쪽 모터는 속도 감소
-            dutyB = baseDuty;  // 오른쪽 모터는 최대 속도 유지
-        } else if (x < 0) {  // 좌회전
-            // 좌회전 정도에 따라 속도 세분화
-            dutyA = baseDuty;  // 왼쪽 모터는 최대 속도 유지
-            dutyB = baseDuty * (1 - fabs(normX) * 0.5);  // 오른쪽 모터는 속도 감소
-        } else {  // 직진
-            dutyA = baseDuty;
-            dutyB = baseDuty;
-        }
+    // x > 0 -> 우회전, x < 0 -> 좌회전
+    if (x < -100) {  // 우회전
+        // 우회전 정도에 따라 속도 세분화
+        dutyA = baseDuty;   // 왼쪽 모터는 속도 감소
+        dutyB = baseDuty * 0.4; // 오른쪽 모터는 최대 속도 유지
+    } else if (x > 100) {  // 좌회전
+        // 좌회전 정도에 따라 속도 세분화
+        dutyA = baseDuty * 0.4;  // 왼쪽 모터는 최대 속도 유지
+        dutyB = baseDuty;  // 오른쪽 모터는 속도 감소
+    } else {  // 직진
+        dutyA = baseDuty;
+        dutyB = baseDuty;
     }
-
     // PWM 신호 설정
     PWMWriteDutyCycle(ENA, abs(dutyA));
-    PWMWriteDutyCycle(ENB, abs(dutyB));
+    PWMWriteDutyCycle(ENB, abs(dutyB)+330000); //모터 하드웨어 차이로 인한 조정
 
     // 디버그 출력
-    //printf("X:%d ### Y:%d ### DutyA:%d ### DutyB:%d ### Magnitude:%.2f\n", x, y, dutyA, dutyB, magnitude);
+    printf("X:%d ## Y:%d ## DutyA:%d ## DutyB:%d\n", x, y, dutyA / 10000, dutyB / 10000);
 }
 
 

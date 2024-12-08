@@ -145,6 +145,7 @@ void* detect_safety(void* arg) {
             {
                 close(car_clnt_sock);
                 remove_from_table(clnt_info, "SAFETY");
+                motor_control = 1;
 
                 print_clients(clnt_info);
 
@@ -218,19 +219,26 @@ void* detect_crash(void* arg) {
 
 void* control_motor(void* arg) {
     while (1) {
-        /*if (!search_table(clnt_info, "CONTROL") || !search_table(clnt_info, "SAFETY")) {
+        if (!search_table(clnt_info, "CONTROL")) {
             //모터 구동 필요 없음, 코드 없어도 됨
             continue;
         }
-        else if (!search_table(clnt_info, "CRASH")) {
-            //CONTROL, SAFETY 클라이언트는 있는데 CRASH 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
-            joy_data[0] /= 2;
-            joy_data[1] /= 2;
-        }*/
+        else if (!search_table(clnt_info, "CRASH") || !search_table(clnt_info, "SAFETY")) {
+            //CONTROL 클라이언트는 있는데 CRASH, SAFETY 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
+            if(joy_data[1] > 250){
+                joy_data[1] = 230;
+            }else if(joy_data[1] < -250){
+                joy_data[1] = -230;
+            }else{
+                joy_data[1] *- 0.9;
+            }
+            
+        }
         //정상 작동시 코드
         if (motor_control == 1 || crash_detect_ou == 1) {
             printf("[*]Emergency Brake Activate!\n");
-            emerBrake(joy_data[1]);
+            stopMotor();
+            sleep(1);
             motor_control = 0;
         }
         else if (motor_control == 2) {
