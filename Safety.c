@@ -29,23 +29,24 @@
 //서버 IP와 port 나중에 받아서 계산하도록 바꾸기
 //여기 채워야돼!!!#######
 #define PORT 12345
-#define serverip "192.168.131.217"
+#define serverip "192.168.131.133"
 #define id "SAFETY"
 
 
 //센서 임계값 가중치  이거 조절해서 민감도 설정
 //total weight = distance weight + (touch weight + pressure weight) - weight loss
 #define DISTANCE_THRESHOLD 15.0f  // Distance threshold in cm
-#define PRESSURE_THRESHOLD 150    // Pressure sensor threshold (ADC value)
+#define PRESSURE_THRESHOLD 30    // Pressure sensor threshold (ADC value)
 #define DISTANCE_WEIGHT 10         // Weight for distance sensor
-#define TOUCH_WEIGHT 10          // Weight for touch sensor when 0 (no hands on)
-#define PRESSURE_WEIGHT 5      // Weight for pressure sensor
+#define TOUCH_WEIGHT 6           // Weight for touch sensor when 0 (no hands on)
+#define PRESSURE_WEIGHT 15      // Weight for pressure sensor
 #define WEIGHT_THRESHOLD 50       // Total weight threshold for triggering the server
-#define WEIGHT_LOSS_RATE 15        // weight loss per time
+#define WEIGHT_LOSS_RATE 5       // weight loss per time
 
+#define SEND2LIMIT 5  //연속된 1을 N번 받을 때 2를 보내는 한계점
 #define SENSING_TIME 1000000         //1s == 1000000
 int totalWeight = 0; //센서가 sos를 보낼 총 가중치값
-
+int allgood = 0;
 
 /* 해더 사용으로 내부에서 구현 필요 X, 주석처리
 // GPIO Export (GPIO activation set)
@@ -124,7 +125,7 @@ int readADC(int fd, u_int8_t channel) {
     return ((rx[1] & 3) << 8) + rx[2];
 }
 
-// US Sensor Measure Distance
+// 초음파 센서 거리 측정
 float measureDistance() {
     struct timeval start, end;
     long duration;
@@ -171,22 +172,22 @@ void *send2server(){
     int warning = 0, cnt = 0; // cnt = 1을 몇번 보내느냐
     char msg[3];
     while(1) {
-        if (cnt > 4) { //연속적으로 1이 갈 경우
+        if (cnt > SEND2LIMIT) { //연속적으로 1이 갈 경우
             strcpy(msg, "2");
             totalWeight = WEIGHT_THRESHOLD -10;
             cnt = 0;
             warning = 1;
-        } 
+        }
         else if (totalWeight < WEIGHT_THRESHOLD || warning == 1) { //warning 2 보내고 난 후 초기화
             strcpy(msg, "0");
             cnt = 0;
             warning = 0;
-        }    
-        
+        }
+
         else if (totalWeight >= WEIGHT_THRESHOLD) {
-            strcpy(msg, "1");    
-            cnt += 1;   
-        }   
+            strcpy(msg, "1");
+            cnt += 1;
+        }
         else if(totalWeight < WEIGHT_THRESHOLD || warning != 1 ) { //평시
             strcpy(msg, "0");
             cnt = 0;
@@ -206,20 +207,31 @@ void *send2server(){
 
 void *touchthread(void *arg) {
     while (1) {
+        GPIOExport(TOUCH_PIN);
+        GPIODirection(TOUCH_PIN, IN);
         int touchState = GPIORead(TOUCH_PIN);
         if (touchState == 0) {
             totalWeight += TOUCH_WEIGHT;
         }
+        else if(touchState == 1)
+            allgood += 1;
         printf("Totalweight: %d\n", totalWeight);
 
         printf("터치 값: %d    ", touchState);
-        totalWeight -= WEIGHT_LOSS_RATE;
+        if(allgood >= 2) {
+            totalWeight -= WEIGHT_LOSS_RATE;
+            allgood = 0;
+        }
+
+
         usleep(SENSING_TIME);
     }
 }
 
 // Pressure sensor thread
-void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 생각해보기
+void *pressurethread(void *arg) { //조정하면 압력값 변함 = 특정 시간동안 압력값 안변 하면
+    int pressureValue = 0;
+
     int spi_fd = open(SPI_DEVICE, O_RDWR);
     if (spi_fd < 0) {
         perror("Failed to open SPI Device");
@@ -228,11 +240,10 @@ void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 
 
     while (1) {
         int touchState = GPIORead(TOUCH_PIN);
-        int pressureValue = 0;
-        if (touchState == 1) {
+        if (touchState == 0) {
             pressureValue = readADC(spi_fd, 0);
-            if (pressureValue > PRESSURE_THRESHOLD) {
-                totalWeight += PRESSURE_WEIGHT + TOUCH_WEIGHT;
+            if ((pressureValue) > PRESSURE_THRESHOLD) { //터치센서 감지 안되는데 압력은 들어옴 = 핸들 안잡고 엑셀 밟는다는 뜻
+                totalWeight += PRESSURE_WEIGHT;
             }
             printf("압력센서: %d    ", pressureValue);
 
@@ -246,11 +257,13 @@ void *pressurethread(void *arg) { //압력값을 어떻게 이용할 건지 더 
 void *USthread(void *arg) {
     while (1) {
         float distance = measureDistance();
-        if (distance > 300)
+        if (distance > 50)
             distance = 0;
-        if (distance < DISTANCE_THRESHOLD) {
+        if (distance > DISTANCE_THRESHOLD) {
             totalWeight += DISTANCE_WEIGHT;
         }
+        else
+            allgood += 1;
         printf("거리: %.2fcm    ", distance);
         usleep(SENSING_TIME);
     }
@@ -295,9 +308,6 @@ int main(int argc, const char* argv[]) {
     pthread_join(USsensor, NULL);
     pthread_join(sendsock, NULL);
 
-    
-
     close(spi_fd);
     return 0;
 }
-
