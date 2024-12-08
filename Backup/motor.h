@@ -54,16 +54,16 @@ void slowStop(int lastspd) {
 
 void changeDutyCycle(int x, int y) {
     // 방향 설정 (전진/후진)
-    if (y < 0) {  // backward
+    if (y > 0) {  // forward
         digitalWrite(IN1, LOW);
         digitalWrite(IN2, HIGH);
-        digitalWrite(IN3, HIGH);
-        digitalWrite(IN4, LOW);
-    } else {  // forward
-        digitalWrite(IN1, HIGH);
-        digitalWrite(IN2, LOW);
         digitalWrite(IN3, LOW);
         digitalWrite(IN4, HIGH);
+    } else {  // backward
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, LOW);
+        digitalWrite(IN3, HIGH);
+        digitalWrite(IN4, LOW);
     }
 
     // y == 0일 때 듀티 사이클 0으로 설정
@@ -74,7 +74,7 @@ void changeDutyCycle(int x, int y) {
     }
     int dutyA = 0, dutyB = 0;
     // 기본 속도는 y에 비례
-    int baseDuty = log(1 + ((float)abs(y) / 400) * 9) * 1000000;  
+    int baseDuty = abs(y) * 22000;  
 
     // x > 0 -> 우회전, x < 0 -> 좌회전
     if (x < -100) {  // 우회전
@@ -89,9 +89,13 @@ void changeDutyCycle(int x, int y) {
         dutyA = baseDuty;
         dutyB = baseDuty;
     }
+    dutyA += 4770000;
+    if(dutyA >= 10000000){
+        dutyA = 999 * 10000;
+    }
     // PWM 신호 설정
-    PWMWriteDutyCycle(ENA, abs(dutyA));
-    PWMWriteDutyCycle(ENB, abs(dutyB));
+    PWMWriteDutyCycle(ENA, dutyA);
+    PWMWriteDutyCycle(ENB, dutyB); //모터 하드웨어 차이로 인한 조정
 
     // 디버그 출력
     printf("X:%d ## Y:%d ## DutyA:%d ## DutyB:%d\n", x, y, dutyA / 10000, dutyB / 10000);

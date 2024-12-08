@@ -54,12 +54,12 @@ void slowStop(int lastspd) {
 
 void changeDutyCycle(int x, int y) {
     // 방향 설정 (전진/후진)
-    if (y < 0) {  // backward
+    if (y > 0) {  // fowward
         digitalWrite(IN1, LOW);
         digitalWrite(IN2, HIGH);
         digitalWrite(IN3, LOW);
         digitalWrite(IN4, HIGH);
-    } else {  // forward
+    } else {  // backward
         digitalWrite(IN1, HIGH);
         digitalWrite(IN2, LOW);
         digitalWrite(IN3, HIGH);
@@ -91,7 +91,7 @@ void changeDutyCycle(int x, int y) {
     }
     // PWM 신호 설정
     PWMWriteDutyCycle(ENA, abs(dutyA));
-    PWMWriteDutyCycle(ENB, abs(dutyB)+330000); //모터 하드웨어 차이로 인한 조정
+    PWMWriteDutyCycle(ENB, abs(dutyB)+320000); //모터 하드웨어 차이로 인한 조정
 
     // 디버그 출력
     printf("X:%d ## Y:%d ## DutyA:%d ## DutyB:%d\n", x, y, dutyA / 10000, dutyB / 10000);

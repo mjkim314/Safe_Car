@@ -179,19 +179,19 @@ void* detect_crash(void* arg) {
    int count = 0;
 
    while (1) {
-       if (search_table(clnt_info, "CRASH") && count % 25 == 0) { // 0.5초마다 값 읽기
+       if (search_table(clnt_info, "CRASH") && count % 10 == 0) { // 0.5초마다 값 읽기
            bytes_read = read(car_clnt_sock, buffer, sizeof(buffer) - 1);
 
            if (bytes_read > 0) {
                
                 if (strncmp(buffer, "F", sizeof("F")) == 0) {
                     crash_detect_ou = 1;
-                    usleep(20000);
+                    sleep(3);
                     crash_detect_ou = 0;
                 }
                 else if (strncmp(buffer, "B", sizeof("B")) == 0) {
                     crash_detect_ou = 1;
-                    usleep(20000);
+                    sleep(3);
                     crash_detect_ou = 0;
                 }
                 else{
