@@ -6,6 +6,7 @@
 
 #define PORT 12345
 #define CLNT_ID "CONTROL"
+#define RANGE 100
 
 void* controller_to_car_output(void* arg) {
     int car_serv_sock = *(int*)arg;
@@ -18,7 +19,7 @@ void* controller_to_car_output(void* arg) {
 
     int base_cnt = 0;
 
-    float alpha = 0.4;
+    float alpha = 0.5;
 
     struct timespec delay;
     delay.tv_sec = 0;
@@ -26,16 +27,16 @@ void* controller_to_car_output(void* arg) {
 
     while (1) {
 
-        if (count % 1 == 0) {
+        if (count % 10  == 0) {
 
             int* temp = readController(joystick_fd);
-            memcpy(joy_data, temp, sizeof(joy_data)); // 배열 데이터 복사
+            memcpy(joy_data, temp, sizeof(joy_data)); // ¹è¿­ µ¥ÀÌÅÍ º¹»ç
 
             
 
-            { //1초 후 부터 조이스틱 값 전송 가능
-                //저역통과 필터 단게
-                //printf("before   -    X: %d  Y: %d   B: %d ||     ", joy_data[0], joy_data[1], joy_data[2]);
+            { //1ÃÊ ÈÄ ºÎÅÍ Á¶ÀÌ½ºÆ½ °ª Àü¼Û °¡´É
+                //Àú¿ªÅë°ú ÇÊÅÍ ´Ü°Ô
+                //printf("before   -    X: %d  Y: %d   B: %d ||     \n", joy_data[0], joy_data[1], joy_data[2]);
 
                 joy_data[0] = (int)(alpha * joy_data[0] + (1 - alpha) * prev_joy_data[0]);
                 joy_data[1] = (int)(alpha * joy_data[1] + (1 - alpha) * prev_joy_data[1]);
@@ -54,12 +55,12 @@ void* controller_to_car_output(void* arg) {
                 }
 
 
-                //0, 0을 조이스틱의 중앙으로 설정
+                //0, 0À» Á¶ÀÌ½ºÆ½ÀÇ Áß¾ÓÀ¸·Î ¼³Á¤
                 joy_data[0] = joy_data[0] - base_joy_data[0];
                 joy_data[1] = base_joy_data[1] - joy_data[1];
 
-                // X, Y 값이 -100 ~ +100 범위에 있는 경우 0으로 설정
-                if (joy_data[0] >= -100 && joy_data[0] <= 100) {
+                // X, Y °ªÀÌ -100 ~ +100 ¹üÀ§¿¡ ÀÖ´Â °æ¿ì 0À¸·Î ¼³Á¤
+                if (joy_data[0] >= -RANGE && joy_data[0] <= RANGE) {
                     joy_data[0] = 0;
                 }
                 else if (joy_data[0] > 100)
@@ -68,7 +69,7 @@ void* controller_to_car_output(void* arg) {
                     joy_data[0] += 100;
 
 
-                if (joy_data[1] >= -100 && joy_data[1] <= 100) {
+                if (joy_data[1] >= -RANGE && joy_data[1] <= RANGE) {
                     joy_data[1] = 0;
                 }
                 else if (joy_data[1] > 100)
@@ -76,16 +77,16 @@ void* controller_to_car_output(void* arg) {
                 else
                     joy_data[1] += 100;
 
-                //버튼이 안눌리면 1, 눌리면 0으로 전송
+                //¹öÆ°ÀÌ ¾È´­¸®¸é 1, ´­¸®¸é 0À¸·Î Àü¼Û
                 if (joy_data[2] < 50)
                     joy_data[2] = 0;
                 else
                     joy_data[2] = 1;
 
-                //printf("after   -    X: %d  Y: %d  B : %d\n", joy_data[0], joy_data[1], joy_data[2]);
+                printf("after   -    X: %d  Y: %d  B : %d\n", joy_data[0], joy_data[1], joy_data[2]);
 
-
-                if (count < 300)//처음 값들은 0으로 초기화(너무 값이 튐)
+                
+                if (count < 300)//Ã³À½ °ªµéÀº 0À¸·Î ÃÊ±âÈ­(³Ê¹« °ªÀÌ Æ¦)
                 {
                     joy_data[0] = 0;
                     joy_data[1] = 0;
@@ -106,8 +107,9 @@ void* controller_to_car_output(void* arg) {
     return NULL;
 }
 
-
 void* check_clnt_lcd(void* arg) {
+    
+
     int serv_sock = *(int*)arg;
     char buffer[36];
     char prev_buffer[36];
@@ -123,17 +125,17 @@ void* check_clnt_lcd(void* arg) {
             ssize_t bytes_read = read(serv_sock, buffer, sizeof(buffer));
 
             if (bytes_read > 0) {
-                char str1[18] = { 0 }; // 처음 16자를 저장할 공간 (NULL 문자 포함)
-                char str2[18] = { 0 }; // 나머지 문자를 저장할 공간
+                char str1[18] = { 0 }; // Ã³À½ 16ÀÚ¸¦ ÀúÀåÇÒ °ø°£ (NULL ¹®ÀÚ Æ÷ÇÔ)
+                char str2[18] = { 0 }; // ³ª¸ÓÁö ¹®ÀÚ¸¦ ÀúÀåÇÒ °ø°£
                 if (strlen(buffer) > 16) {
-                    strncpy(str1, buffer, 16); // 처음 16자 복사
-                    str1[16] = '\0'; // NULL 문자 추가
-                    strncpy(str2, buffer + 16, sizeof(str2) - 1); // 17번째 문자부터 복사
-                    str2[sizeof(str2) - 1] = '\0'; // NULL 문자 추가
+                    strncpy(str1, buffer, 16); // Ã³À½ 16ÀÚ º¹»ç
+                    str1[16] = '\0'; // NULL ¹®ÀÚ Ãß°¡
+                    strncpy(str2, buffer + 16, sizeof(str2) - 1); // 17¹øÂ° ¹®ÀÚºÎÅÍ º¹»ç
+                    str2[sizeof(str2) - 1] = '\0'; // NULL ¹®ÀÚ Ãß°¡
                 }
                 else {
-                    strncpy(str1, buffer, sizeof(str1) - 1); // buffer 전체를 str1에 복사
-                    str1[sizeof(str1) - 1] = '\0'; // NULL 문자 추가
+                    strncpy(str1, buffer, sizeof(str1) - 1); // buffer ÀüÃ¼¸¦ str1¿¡ º¹»ç
+                    str1[sizeof(str1) - 1] = '\0'; // NULL ¹®ÀÚ Ãß°¡
                 }
                     
 
@@ -173,7 +175,7 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    fd = wiringPiI2CSetup(LCD_ADDR);  // I2C 장치 설정 (주소는 0x27)
+    fd = wiringPiI2CSetup(LCD_ADDR);  // I2C ÀåÄ¡ ¼³Á¤ (ÁÖ¼Ò´Â 0x27)
     if (fd == -1) {
         printf("LCD initialization failed.\n");
         return -1;
@@ -194,7 +196,7 @@ int main(int argc, char* argv[]) {
     pthread_create(&controller_to_car_output_thread, NULL, controller_to_car_output, (void*)&car_serv_sock);
     pthread_create(&check_clnt_lcd_thread, NULL, check_clnt_lcd, (void*)&car_serv_sock);
 
-    pthread_detach(check_clnt_lcd_thread);
+    pthread_join(check_clnt_lcd_thread, NULL);
     pthread_join(controller_to_car_output_thread, NULL);
 
     close(car_serv_sock);
