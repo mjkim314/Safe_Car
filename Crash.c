@@ -24,6 +24,7 @@ volatile int backUltrasonicActive = 0;
 
 // 소켓 통신 관련 설정
 #define SERVER_PORT 12345      // 포트 번호
+#define Eth_IP "169.254.157.29"
 #define CLNT_ID "CRASH"
 
 
@@ -111,7 +112,7 @@ void *irSensorThread(void *arg) {
 			write(sockfd, message3, sizeof(message3));
 			//printf("감지 X/ 연결 중\n");
 		}
-		sleep(1);
+		usleep(50000);
 	}
 	return NULL;
 }
@@ -123,8 +124,8 @@ int main(int argc, char* argv[]) {
  struct sockaddr_in serverAddr;
 
 
- if (argc != 2) {
-     printf("Usage : %s <IP>\n", argv[0]);
+ if (argc != 1) {
+     printf("Usage : %s\n", argv[0]);
      exit(EXIT_FAILURE);
  }
 
@@ -135,7 +136,7 @@ int main(int argc, char* argv[]) {
  
 
 	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = inet_addr(argv[1]);
+	serverAddr.sin_addr.s_addr = inet_addr(Eth_IP);
 	serverAddr.sin_port = htons(SERVER_PORT);
 	
 
