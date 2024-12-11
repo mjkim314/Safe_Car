@@ -253,7 +253,7 @@ void* control_motor(void* arg) {
 
         
     }
-    return NULL;
+return NULL;
 }
 
 void playTone(int frequency, int duration) {//Buzzer 재생 함수

@@ -5,12 +5,12 @@
 #include "PWM.h"
 #include "math.h"
 
-#define ENA 0 // ENA 핀 23
-#define IN1 0  // IN1 핀
-#define IN2 2  // IN2 핀
-#define ENB 1  // ENB 핀 26
-#define IN3 4 // IN3 핀
-#define IN4 5  // IN4 핀
+#define ENA 18 // ENA 핀 1
+#define IN1 17  // IN1 핀
+#define IN2 27  // IN2 핀
+#define ENB 13  // ENB 핀 23
+#define IN3 23 // IN3 핀
+#define IN4 24  // IN4 핀
 
 #define MAX_INPUT 400    // x, y 값의 최대 절댓값
 #define PWM_SCALE 500000  // PWM 값 스케일
@@ -19,7 +19,8 @@
 
 //motor 초기화
 void initMotor() {
-    wiringPiSetup();  // GPIO 핀 번호 사용
+    wiringPiSetupGpio();  // GPIO 핀 번호 사용
+    pwmSetMode(PWM_MODE_MS);
 
     pinMode(IN1, OUTPUT);
     pinMode(IN2, OUTPUT);
@@ -27,8 +28,10 @@ void initMotor() {
     pinMode(IN3, OUTPUT);
     pinMode(IN4, OUTPUT);
 
-    PWMinit(ENA);
-    PWMinit(ENB);
+    //PWMinit(ENA);
+    //PWMinit(ENB);
+    pinMode(ENA, PWM_OUTPUT);
+    pinMode(ENB, PWM_OUTPUT);
 }
 
 //stop
@@ -37,16 +40,21 @@ void stopMotor() {
     digitalWrite(IN2, LOW);
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, LOW);
-    
-    PWMWriteDutyCycle(ENA, 0);
-    PWMWriteDutyCycle(ENB, 0);
+
+    pwmWrite(ENA, 0);
+    pwmWrite(ENB, 0);
+
+    //PWMWriteDutyCycle(ENA, 0);
+    //PWMWriteDutyCycle(ENB, 0);
 }
 
 void slowStop(int lastspd) {
     int spd = abs(lastspd);
     for(int i = spd; i > 0; i--){
-        PWMWriteDutyCycle(ENA, i);
-        PWMWriteDutyCycle(ENB, i);
+        //PWMWriteDutyCycle(ENA, i);
+        //PWMWriteDutyCycle(ENB, i);
+	pwmWrite(ENA, i);
+	pwmWrite(ENB, i);
     }
     stopMotor();
     sleep(3);
@@ -74,7 +82,7 @@ void changeDutyCycle(int x, int y) {
     }
     int dutyA = 0, dutyB = 0;
     // 기본 속도는 y에 비례
-    int baseDuty = abs(y) * 22000;  
+    int baseDuty = abs(y) * 2.2;  
 
     // x > 0 -> 우회전, x < 0 -> 좌회전
     if (x < -100) {  // 우회전
@@ -90,11 +98,13 @@ void changeDutyCycle(int x, int y) {
         dutyB = baseDuty;
     }
     // PWM 신호 설정
-    PWMWriteDutyCycle(ENA, abs(dutyA));
-    PWMWriteDutyCycle(ENB, abs(dutyB)+320000); //모터 하드웨어 차이로 인한 조정
+    pwmWrite(ENA, abs(dutyA));
+    pwmWrite(ENB, abs(dutyB));
+    //PWMWriteDutyCycle(ENA, abs(dutyA));
+    //PWMWriteDutyCycle(ENB, abs(dutyB)+320000); //모터 하드웨어 차이로 인한 조정
 
     // 디버그 출력
-    printf("X:%d ## Y:%d ## DutyA:%d ## DutyB:%d\n", x, y, dutyA / 10000, dutyB / 10000);
+    printf("X:%d ## Y:%d ## DutyA:%d ## DutyB:%d\n", x, y, dutyA, dutyB);
 }
 
 
