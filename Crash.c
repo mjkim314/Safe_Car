@@ -11,8 +11,8 @@
 
 // GPIO 관련 경로
 #define GPIO_PATH "/sys/class/gpio"
-#define F_TRIG_PIN 17
-#define F_ECHO_PIN 27
+#define F_TRIG_PIN 27
+#define F_ECHO_PIN 17
 #define F_IR_PIN 22
 #define B_TRIG_PIN 23
 #define B_ECHO_PIN 24
@@ -26,10 +26,6 @@ volatile int backUltrasonicActive = 0;
 #define SERVER_PORT 12345      // 포트 번호
 #define Eth_IP "169.254.157.29"
 #define CLNT_ID "CRASH"
-
-
-
-
 
 float measureDistance(int trigPin, int echoPin) {
 	struct timeval start, end;
@@ -53,32 +49,33 @@ float measureDistance(int trigPin, int echoPin) {
 // 초음파 센서 쓰레드 (Front)
 void *frontUltrasonicThread(void *arg) {
 	while (1) {
-		float distance = measureDistance(F_TRIG_PIN, F_ECHO_PIN);
-		if (distance < 15.0) {
+		float fdistance = measureDistance(F_TRIG_PIN, F_ECHO_PIN);
+		if (fdistance < 15.0) {
 			frontUltrasonicActive = 1; // 50cm 미만이면 플래그 활성화
 		} else {
 			frontUltrasonicActive = 0; // 50cm 이상이면 플래그 비활성화
 		}
-		//printf("[Front] 거리: %.2f cm (Flag: %d)\n", distance, frontUltrasonicActive);
+		printf("[Front] 거리: %.2f cm (Flag: %d)\n", fdistance, frontUltrasonicActive);
 		sleep(1);
 	}
-	return NULL;
+	pthread_exit(NULL);
 }
 
 // 초음파 센서 쓰레드 (Back)
 void *backUltrasonicThread(void *arg) {
 	while (1) {
-		float distance = measureDistance(B_TRIG_PIN, B_ECHO_PIN);
-		if (distance < 15.0) {
+		float bdistance = measureDistance(B_TRIG_PIN, B_ECHO_PIN);
+		if (bdistance < 15.0) {
 			backUltrasonicActive = 1;
 		} else {
 			backUltrasonicActive = 0;
 		}
-		//printf("[Back] 거리: %.2f cm (Flag: %d)\n", distance, backUltrasonicActive);
+		printf("[Back] 거리: %.2f cm (Flag: %d)\n", bdistance, backUltrasonicActive);
 		sleep(1);
 	}
-	return NULL;
+	pthread_exit(NULL);
 }
+
 
 // IR 센서 쓰레드
 void *irSensorThread(void *arg) {
@@ -87,7 +84,7 @@ void *irSensorThread(void *arg) {
 	while (1) {
 		if (frontUltrasonicActive) {
 			int frontIr = GPIORead(F_IR_PIN);
-			if(frontIr == 0){
+			if(frontIr == 1){
 			
 			char message1[2];
 			snprintf(message1, sizeof(message1), "F");
@@ -112,9 +109,9 @@ void *irSensorThread(void *arg) {
 			write(sockfd, message3, sizeof(message3));
 			//printf("감지 X/ 연결 중\n");
 		}
-		usleep(50000);
+		sleep(1.3);
 	}
-	return NULL;
+	pthread_exit(NULL);
 }
 
 int main(int argc, char* argv[]) {
