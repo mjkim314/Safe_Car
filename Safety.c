@@ -36,9 +36,9 @@
 //센서 임계값 가중치  이거 조절해서 민감도 설정
 //total weight = distance weight + (touch weight + pressure weight) - weight loss
 #define DISTANCE_THRESHOLD 15.0f  // Distance threshold in cm
-#define PRESSURE_THRESHOLD 30    // Pressure sensor threshold (ADC value)
+#define PRESSURE_THRESHOLD 100    // Pressure sensor threshold (ADC value)
 #define DISTANCE_WEIGHT 10         // Weight for distance sensor
-#define TOUCH_WEIGHT 6           // Weight for touch sensor when 0 (no hands on)
+#define TOUCH_WEIGHT 5           // Weight for touch sensor when 0 (no hands on)
 #define PRESSURE_WEIGHT 15      // Weight for pressure sensor
 #define WEIGHT_THRESHOLD 50       // Total weight threshold for triggering the server
 #define WEIGHT_LOSS_RATE 5       // weight loss per time
@@ -104,6 +104,33 @@ int gpioWrite(int pin, int value) {
     close(fd);
     return 0;
 } */
+// GPIO 핀 초기화 함수
+int initGPIO(int pin, const char *direction) {
+    char path[50];
+    // GPIO Export
+    int fd = open(GPIO_PATH "/export", O_WRONLY);
+    if (fd == -1) {
+        perror("GPIO Export Failed");
+        return -1;
+    }
+    snprintf(path, sizeof(path), "%d", pin);
+    write(fd, path, strlen(path));
+    close(fd);
+
+    // GPIO Direction 설정
+    snprintf(path, sizeof(path), GPIO_PATH "/gpio%d/direction", pin);
+    fd = open(path, O_WRONLY);
+    if (fd == -1) {
+        perror("Failed to set GPIO Direction");
+        return -1;
+    }
+    write(fd, direction, strlen(direction));
+    close(fd);
+
+    return 0;  // 성공적으로 초기화됨
+}
+
+
 
 // MCP3008 Read pressure sensor Value
 int readADC(int fd, u_int8_t channel) {
@@ -177,17 +204,18 @@ void *send2server(){
             totalWeight = WEIGHT_THRESHOLD -10;
             cnt = 0;
             warning = 1;
-        }
+        } 
         else if (totalWeight < WEIGHT_THRESHOLD || warning == 1) { //warning 2 보내고 난 후 초기화
             strcpy(msg, "0");
             cnt = 0;
             warning = 0;
-        }
-
+        }    
+        
         else if (totalWeight >= WEIGHT_THRESHOLD) {
-            strcpy(msg, "1");
-            cnt += 1;
-        }
+            strcpy(msg, "1");    
+            cnt += 1;   
+            totalWeight = 40;
+        }   
         else if(totalWeight < WEIGHT_THRESHOLD || warning != 1 ) { //평시
             strcpy(msg, "0");
             cnt = 0;
@@ -207,6 +235,7 @@ void *send2server(){
 
 void *touchthread(void *arg) {
     while (1) {
+        
         GPIOExport(TOUCH_PIN);
         GPIODirection(TOUCH_PIN, IN);
         int touchState = GPIORead(TOUCH_PIN);
@@ -222,14 +251,16 @@ void *touchthread(void *arg) {
             totalWeight -= WEIGHT_LOSS_RATE;
             allgood = 0;
         }
-
-
+        else
+            allgood = 0;
+            
+            
         usleep(SENSING_TIME);
     }
 }
 
 // Pressure sensor thread
-void *pressurethread(void *arg) { //조정하면 압력값 변함 = 특정 시간동안 압력값 안변 하면
+void *pressurethread(void *arg) { //조정하면 압력값 변함 = 특정 시간동안 압력값 안변하면 
     int pressureValue = 0;
 
     int spi_fd = open(SPI_DEVICE, O_RDWR);
@@ -257,7 +288,7 @@ void *pressurethread(void *arg) { //조정하면 압력값 변함 = 특정 시�
 void *USthread(void *arg) {
     while (1) {
         float distance = measureDistance();
-        if (distance > 50)
+        if (distance > 200)
             distance = 0;
         if (distance > DISTANCE_THRESHOLD) {
             totalWeight += DISTANCE_WEIGHT;
@@ -311,3 +342,4 @@ int main(int argc, const char* argv[]) {
     close(spi_fd);
     return 0;
 }
+
