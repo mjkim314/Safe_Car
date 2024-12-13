@@ -5,11 +5,10 @@
 #include "spi.h"
 #include "motor.h"
 #include "hash_table.h"
-//#include "lcd.h"
+#include <errno.h>
 
-
-#define LED_PIN 29
-#define BUZZER_PIN 28
+#define LED_PIN 21
+#define BUZZER_PIN 20
 #define PORT 12345
 #define CLNT_SIZE 3
 int motor_control = 0;
@@ -26,6 +25,11 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
     delay.tv_sec = 0;
     delay.tv_nsec = 10000000;
     int count = 0;
+
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+    setsockopt(car_clnt_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
     while (1) {
 
@@ -46,6 +50,20 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 
                 //printf("X: %d  Y: %d  B: %d\n", joy_data[0], joy_data[1], joy_data[2]);
             }
+            
+            else if (bytes_read == 0 || (bytes_read < 0 && errno == EWOULDBLOCK)) {
+                // Timeout or disconnect detected
+                printf("CONTORL client disconnected or timed out.\n");
+                close(car_clnt_sock);
+                remove_from_table(clnt_info, "CONTROL");
+
+                print_clients(clnt_info);
+                clnt_count--;
+
+		stopMotor();
+
+                pthread_exit(NULL);
+            }
             else
             {
                 close(get_sock_by_key(clnt_info, "CONTROL"));
@@ -54,12 +72,15 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
                 print_clients(clnt_info);
                 clnt_count--;
 
+		stopMotor();
+
                 pthread_exit(NULL);
             }
 
 
         }
         else { //컨트롤러가 연결이 안돼있을 때(모터 제어 x라던가 기능 적용해야 함)
+	
 
         }
         memset(buffer, 0, sizeof(buffer));
@@ -118,6 +139,12 @@ void* detect_safety(void* arg) {
     delay.tv_sec = 0;
     delay.tv_nsec = 10000000;
     int count = 0;
+    
+    struct timeval timeout;
+    timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
+    setsockopt(car_clnt_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+    
    
     while (1) {
 
@@ -140,6 +167,17 @@ void* detect_safety(void* arg) {
                 }
 
 
+            }
+            else if (bytes_read == 0 || (bytes_read < 0 && errno == EWOULDBLOCK)) {
+                // Timeout or disconnect detected
+                //printf("SAFETY client disconnected or timed out.\n");
+                close(car_clnt_sock);
+                remove_from_table(clnt_info, "SAFETY");
+
+                print_clients(clnt_info);
+                clnt_count--;
+
+                pthread_exit(NULL);
             }
             else
             {
@@ -178,6 +216,11 @@ void* detect_crash(void* arg) {
    delay.tv_nsec = 10000000;
    int count = 0;
 
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+    setsockopt(car_clnt_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+    
    while (1) {
        if (search_table(clnt_info, "CRASH") && count % 10 == 0) { // 0.5초마다 값 읽기
            bytes_read = read(car_clnt_sock, buffer, sizeof(buffer) - 1);
@@ -199,6 +242,18 @@ void* detect_crash(void* arg) {
                 }
 
            }
+            else if (bytes_read == 0 || (bytes_read < 0 && errno == EWOULDBLOCK)) {
+                // Timeout or disconnect detected
+                //printf("CRASH client disconnected or timed out.\n");
+                close(car_clnt_sock);
+                remove_from_table(clnt_info, "CRASH");
+
+                print_clients(clnt_info);
+                clnt_count--;
+
+                pthread_exit(NULL);
+            }
+
            else
            {
                 close(car_clnt_sock);
@@ -225,13 +280,13 @@ void* control_motor(void* arg) {
         }
         else if (!search_table(clnt_info, "CRASH") || !search_table(clnt_info, "SAFETY")) {
             //CONTROL 클라이언트는 있는데 CRASH, SAFETY 클라이언트가 없을 경우, 최대 속도 제한 (정지아님)
-            if(joy_data[1] > 250){
+            if(joy_data[1] > 230){
                 joy_data[1] = 230;
-            }else if(joy_data[1] < -250){
+            }else if(joy_data[1] < -230){
                 joy_data[1] = -230;
-            }else{
-                joy_data[1] *- 0.9;
-            }
+            }//else{
+               // joy_data[1] *= 0.9;
+            //}
             
         }
         //정상 작동시 코드
@@ -257,8 +312,8 @@ return NULL;
 }
 
 void playTone(int frequency, int duration) {//Buzzer 재생 함수
-    int delay = 1000000 / frequency / 2; // 주기 계산
-    int cycles = frequency * duration / 1000; // 주어진 시간 동안 사이클 수 계산
+    int delay = (1000000 / frequency) / 2; // 주기 계산
+    int cycles = (frequency * duration) / 1000; // 주어진 시간 동안 사이클 수 계산
     for (int i = 0; i < cycles; i++) {
         digitalWrite(BUZZER_PIN, HIGH); // 부저 ON
         usleep(delay);                 // 고음 유지 시간
@@ -286,10 +341,10 @@ void* controller_to_car_input_btn(void* arg) { //조이스틱 버튼을 눌렀�
             for(int j=0; j<3; j++){
                 digitalWrite(LED_PIN, 1);
                 for (int i=0; i<3; i++){
-                    playTone(song[i], 300);
+                    playTone(song[i], 200);
                 }
                 digitalWrite(LED_PIN, 0);
-                usleep(100000);
+                usleep(90000);
             }
             digitalWrite(BUZZER_PIN, LOW);
         }
@@ -307,7 +362,7 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (wiringPiSetup() == -1) {
+    if (wiringPiSetupGpio() == -1) {
         printf("WiringPi setup failed!\n");
         return -1;
     }
