@@ -23,14 +23,15 @@ volatile int frontUltrasonicActive = 0;
 volatile int backUltrasonicActive = 0;
 
 // 소켓 통신 관련 설정
-#define SERVER_PORT 12345      // 포트 번호
-#define Eth_IP "169.254.157.29"
-#define CLNT_ID "CRASH"
+#define SERVER_PORT 12345      	// 포트 번호
+#define Eth_IP "169.254.157.29"	//이더넷 IP
+#define CLNT_ID "CRASH"		//클라이언트 ID
 
+// 초음파 센서 거리 계산 함수
 float measureDistance(int trigPin, int echoPin) {
 	struct timeval start, end;
 	long duration;
-
+	
 	GPIOWrite(trigPin, 0);
 	usleep(2);
 	GPIOWrite(trigPin, 1);
@@ -61,7 +62,7 @@ void *frontUltrasonicThread(void *arg) {
 	pthread_exit(NULL);
 }
 
-// 초음파 센서 쓰레드 (Back)
+// 초음파 센서 쓰레드 (Back) - 위와 동일
 void *backUltrasonicThread(void *arg) {
 	while (1) {
 		float bdistance = measureDistance(B_TRIG_PIN, B_ECHO_PIN);
@@ -82,25 +83,24 @@ void *irSensorThread(void *arg) {
 	int sockfd = *(int*)arg;
 	
 	while (1) {
+		// Front, Back의 초음파 센서 트리거 활성화 -> IR 센서 체크, IR 센서 감지 시 소켓 전송
 		if (frontUltrasonicActive) {
 			int frontIr = GPIORead(F_IR_PIN);
-			if(frontIr == 1){
-			
-			char message1[2];
-			snprintf(message1, sizeof(message1), "F");
-			write(sockfd, message1, sizeof(message1));
-			printf("F : %d\n", frontIr);	
-
+			if(frontIr == 1){ // front ir 센서 값이 1이면 감지 
+				char message1[2];
+				snprintf(message1, sizeof(message1), "F");
+				write(sockfd, message1, sizeof(message1));
+				printf("F : %d\n", frontIr);	
+			}
 		}
-	}
 		
 		else if (backUltrasonicActive) {
 			int backIr = GPIORead(B_IR_PIN);
-			if(backIr == 0){
-			char message2[2];
-			snprintf(message2, sizeof(message2), "B");
-			write(sockfd, message2, sizeof(message2));
-			printf("B : %d\n", backIr);
+			if(backIr == 0){ // back ir 센서 값이 1이면 감지
+				char message2[2];
+				snprintf(message2, sizeof(message2), "B");
+				write(sockfd, message2, sizeof(message2));
+				printf("B : %d\n", backIr);
 			}
 		}
 		else {
@@ -118,18 +118,18 @@ int main(int argc, char* argv[]) {
 	// 소켓 초기화
 	int sockfd;
 
- struct sockaddr_in serverAddr;
+ 	struct sockaddr_in serverAddr;
 
-
- if (argc != 1) {
-     printf("Usage : %s\n", argv[0]);
-     exit(EXIT_FAILURE);
- }
-
- if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-     perror("Socket creation failed");
-     exit(EXIT_FAILURE);
- }
+	// I/O 확인
+	 if (argc != 1) {
+	     printf("Usage : %s\n", argv[0]);
+	     exit(EXIT_FAILURE);
+	 }
+	
+	 if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+	     perror("Socket creation failed");
+	     exit(EXIT_FAILURE);
+	 }
  
 
 	serverAddr.sin_family = AF_INET;
@@ -144,13 +144,13 @@ int main(int argc, char* argv[]) {
 	}
 	
 	
-// CLNT_ID 전송
-if (write(sockfd, CLNT_ID, strlen(CLNT_ID)) < 0) {
-    perror("CLNT_ID 전송 실패");
-} else {
-    printf("CLNT_ID 전송 성공: %s\n", CLNT_ID);
-}
-	// GPIO 초기화 (기존 코드 유지)
+	// CLNT_ID 전송
+	if (write(sockfd, CLNT_ID, strlen(CLNT_ID)) < 0) {
+	    perror("CLNT_ID 전송 실패");
+	} else {
+	    printf("CLNT_ID 전송 성공: %s\n", CLNT_ID);
+	}
+	// GPIO 초기화
 	GPIOExport(F_TRIG_PIN);
 	GPIOExport(F_ECHO_PIN);
 	GPIOExport(F_IR_PIN);
