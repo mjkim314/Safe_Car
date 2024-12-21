@@ -1,8 +1,6 @@
 
 #include "header.h"
 #include "joystick.h"
-#include "GPIO.h"
-#include "spi.h"
 #include "motor.h"
 #include "hash_table.h"
 #include <errno.h>
@@ -26,7 +24,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
     delay.tv_nsec = 10000000;
     int count = 0;
 
-    struct timeval timeout;
+    struct timeval timeout; //타임 아웃 체크
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
     setsockopt(car_clnt_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
@@ -63,6 +61,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
 		stopMotor();
 
                 pthread_exit(NULL);
+		// 자원 회수 및 모터 정지
             }
             else
             {
@@ -91,7 +90,7 @@ void* controller_to_car_input_joy(void* arg) { //조이스틱 값을 읽는 스�
     return NULL;
 }
 
-void* car_to_controller_lcd(void* arg) {
+void* car_to_controller_lcd(void* arg) { //클라이언트 접속 상태 전달 스레드
     int car_clnt_sock = *(int*)arg;
     char buffer[36];
     char prev_buffer[36];
@@ -131,7 +130,7 @@ void* car_to_controller_lcd(void* arg) {
 
 }
 
-void* detect_safety(void* arg) {
+void* detect_safety(void* arg) { //Safety.c 상호작용 스레드
     int car_clnt_sock = *(int*)arg;
     char buffer[256];
     ssize_t bytes_read;
@@ -207,7 +206,7 @@ void* detect_safety(void* arg) {
 
 }
 
-void* detect_crash(void* arg) {
+void* detect_crash(void* arg) {// Crash.c 상호작용 스레드
    int car_clnt_sock = *(int*)arg;
    char buffer[256];
    struct timespec delay;
@@ -272,10 +271,10 @@ void* detect_crash(void* arg) {
 }
 
 
-void* control_motor(void* arg) {
+void* control_motor(void* arg) { //모터 제어 스레드
     while (1) {
         if (!search_table(clnt_info, "CONTROL")) {
-            //모터 구동 필요 없음, 코드 없어도 됨
+            //모터 구동 제한, 코드 없어도 됨
             continue;
         }
         else if (!search_table(clnt_info, "CRASH") || !search_table(clnt_info, "SAFETY")) {
@@ -290,13 +289,13 @@ void* control_motor(void* arg) {
             
         }
         //정상 작동시 코드
-        if (motor_control == 1 || crash_detect_ou == 1) {
+        if (motor_control == 1 || crash_detect_ou == 1) { //상황 1번
             printf("[*]Emergency Brake Activate!\n");
             stopMotor();
             sleep(1);
             motor_control = 0;
         }
-        else if (motor_control == 2) {
+        else if (motor_control == 2) { //상황 2번
             printf("[*]Slow Stop Activate!\n");
             slowStop(joy_data[1]);
             motor_control = 0;
